@@ -481,6 +481,7 @@
             <span class="nr-ticker-label">LATEST</span>
             <div class="nr-ticker-viewport"><div class="nr-ticker-track"><div style="display:flex">${tickerItems}</div><div style="display:flex" aria-hidden="true">${tickerItems.replace(/<a /g, '<a tabindex="-1" ')}</div></div></div>
           </div>
+          ${App.voterGuide ? App.voterGuide.bar(t) : ''}
 
           <div class="nr-lead-grid">
             <article class="nr-lead" data-tour="newsroom-lead">

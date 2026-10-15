@@ -154,6 +154,35 @@
   .scr-hub .ph-hero p { font-size:1rem; }
 }
 
+/* above the fold: voter guide + committee panel */
+.scr-hub .ph-links .ph-link-guide { background:rgba(255,255,255,.14); }
+.scr-hub .ph-links .ph-link-guide:hover { background:rgba(255,255,255,.24); }
+.scr-hub .ph-front { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:14px; align-items:stretch; transition:gap .25s ease; }
+.scr-hub .ph-front.is-single { grid-template-columns:minmax(0,1fr); }
+.scr-hub.ph-zones-on .ph-front { gap:36px; }
+.scr-hub .ph-front > .ph-zone { display:flex; flex-direction:column; min-width:0; }
+.scr-hub .ph-front > .ph-zone > section { flex:1; }
+.scr-hub .ph-cmte { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r); background:#fff; overflow:hidden; }
+.scr-hub .ph-cmte-head { padding:18px 18px 14px; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--brand) 5%, white); }
+.scr-hub .ph-cmte-eyebrow { display:inline-flex; align-items:center; gap:6px; font:800 12px/1.2 var(--font-body); letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
+.scr-hub .ph-cmte-head h2 { margin:6px 0 4px; font-size:1.5rem; line-height:1.05; }
+.scr-hub .ph-cmte-head p { margin:0; font-size:14.5px; line-height:1.45; color:var(--ink-2); }
+.scr-hub .ph-cmte-item { display:flex; gap:12px; align-items:flex-start; padding:14px 18px; border-bottom:1px solid var(--line); }
+.scr-hub .ph-cmte-info { flex:1; min-width:0; }
+.scr-hub .ph-cmte-kind { display:block; font:800 11.5px/1.3 var(--font-body); letter-spacing:.07em; text-transform:uppercase; color:var(--accent); }
+.scr-hub .ph-cmte-title { font-weight:800; font-size:15.5px; line-height:1.3; margin-top:1px; }
+.scr-hub .ph-cmte-sub { font-size:13.5px; color:var(--ink-3); line-height:1.4; margin:2px 0 8px; }
+.scr-hub .ph-cmte-actions { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; padding:14px 18px 18px; margin-top:auto; }
+.scr-hub .ph-cmte-actions .btn { width:100%; justify-content:center; padding-left:8px; padding-right:8px; }
+.scr-hub .ph-cmte-donate { background:var(--accent); border-color:var(--accent); color:#fff; }
+.scr-hub .ph-cmte-donate:hover { background:color-mix(in srgb, var(--accent) 85%, black); color:#fff; }
+@container (max-width: 780px) {
+  .scr-hub .ph-front { grid-template-columns:minmax(0,1fr); }
+}
+@container (max-width: 420px) {
+  .scr-hub .ph-cmte-actions { grid-template-columns:minmax(0,1fr); }
+}
+
 /* feed */
 .scr-hub .ph-section-head { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 12px; margin-bottom:8px; }
 .scr-hub .ph-section-head h2 { margin:0; font-size:1.45rem; }
@@ -481,6 +510,7 @@
     const cands = (t.candidates || []).filter((c) => c.status === 'ENDORSED' || c.status === 'ACTIVE_CAMPAIGN');
     const videos = (t.videos || []).slice(0, 6);
     const brk = breakingItem(t);
+    const guide = App.voterGuide && App.voterGuide.get(t);
 
     const bannerHtml = zone('network', t, adSlot(masterAd('HEADER_BANNER'), 'master', 'data-tour="hub-master-slot"'));
 
@@ -499,6 +529,7 @@
             <span><span class="ph-wm-name">${esc(t.shortName)}</span><span class="ph-wm-sub">${esc(t.name)}</span></span>
           </button>
           <nav class="ph-links" aria-label="Site">
+            ${guide ? '<button class="ph-link-guide" data-vg="open">Voter Guide</button>' : ''}
             <button data-act="scroll" data-to="ph-news">News</button>
             <button data-act="scroll" data-to="ph-video">Video</button>
             <button data-act="scroll" data-to="ph-cands">Candidates</button>
@@ -507,11 +538,54 @@
             <button class="ph-donate" data-act="donate">Donate</button>
           </nav>
         </div>
-        <div class="ph-hero">
-          <svg class="ph-hero-star" viewBox="0 0 100 100" aria-hidden="true">${STAR(50, 52, 48, 'fill:currentColor')}</svg>
+      </div>`);
+
+    /* Above the fold: the committee's voter guide, plus what the committee is doing next. */
+    const today = new Date().toISOString().slice(0, 10);
+    const nextEv = (t.events || []).find((e) => e.date >= today) || (t.events || [])[0];
+    const mtg = t.meeting;
+    const dateBlock = (iso) => { const d = fmtDate(iso); return `<div class="ph-date"><b>${esc(d.mon)}</b><span>${esc(d.day)}</span></div>`; };
+    const cmteHtml = `
+      <section class="ph-cmte" aria-labelledby="ph-cmte-h">
+        <div class="ph-cmte-head">
+          <span class="ph-cmte-eyebrow">${STAR_ICON(13, 'var(--accent)')} Your county party</span>
+          <h2 id="ph-cmte-h">${esc(t.shortName)} this month</h2>
           <p>${esc(t.tagline || '')}</p>
         </div>
-      </div>`);
+        ${mtg ? `<div class="ph-cmte-item">
+          ${dateBlock(mtg.date)}
+          <div class="ph-cmte-info">
+            <span class="ph-cmte-kind">Central Committee meeting</span>
+            <div class="ph-cmte-title">${esc(mtg.title)}</div>
+            <div class="ph-cmte-sub">${esc(fmtDate(mtg.date).long)} · ${esc(mtg.time)} · ${esc(mtg.provider || '')} · Open to the public</div>
+            <div class="ph-rsvp-row">
+              <button class="btn btn-sm" data-act="agenda">See agenda</button>
+              <button class="btn btn-sm btn-ghost" data-act="calendar">Add to calendar</button>
+            </div>
+          </div>
+        </div>` : ''}
+        ${nextEv ? (() => { const going = !!S.hub_rsvp[nextEv.id]; return `<div class="ph-cmte-item">
+          ${dateBlock(nextEv.date)}
+          <div class="ph-cmte-info">
+            <span class="ph-cmte-kind">Next event · ${esc(nextEv.kind || 'Event')}</span>
+            <div class="ph-cmte-title">${esc(nextEv.title)}</div>
+            <div class="ph-cmte-sub">${esc(fmtDate(nextEv.date).long)} · ${esc(nextEv.time || '')} · ${esc(String(nextEv.location || '').split(',').slice(-1)[0].trim())}</div>
+            <div class="ph-rsvp-row">
+              <button class="btn btn-sm ph-rsvp${going ? ' is-going' : ''}" data-act="rsvp" data-id="${esc(nextEv.id)}" aria-pressed="${going}">${going ? 'You’re going ✓' : 'RSVP'}</button>
+              <span class="small muted"><b data-count="${esc(nextEv.id)}">${U.fmtNum((nextEv.rsvps || 0) + (going ? 1 : 0))}</b> going</span>
+            </div>
+          </div>
+        </div>`; })() : ''}
+        <div class="ph-cmte-actions">
+          <button class="btn btn-primary" data-act="volunteer">Volunteer</button>
+          <button class="btn" data-act="join">Become a member</button>
+          <button class="btn ph-cmte-donate" data-act="donate">Donate</button>
+        </div>
+      </section>`;
+    const frontHtml = `<div class="ph-front${guide ? '' : ' is-single'}" data-tour="hub-front">
+      ${guide ? zone('local', t, App.voterGuide.teaser(t), 'id="ph-guide"') : ''}
+      ${zone('local', t, cmteHtml, 'id="ph-cmte"')}
+    </div>`;
 
     const feedZoneKind = feedZone(S.hub_tab);
     const feedHtmlBlock = `<div class="ph-zone ph-feed" data-zone="${feedZoneKind}" id="ph-news">
@@ -626,9 +700,10 @@
           <span class="ph-visitor">Visitor view</span>
         </div>
         <div class="ph-site" id="ph-top">
-          ${bannerHtml}
           ${breakingHtml}
           ${navHtml}
+          ${frontHtml}
+          ${bannerHtml}
           <div class="ph-body">
             <div class="ph-main">${feedHtmlBlock}${videoHtml}</div>
             <aside class="ph-side" aria-label="Sidebar">${sideHtml}</aside>
@@ -639,6 +714,9 @@
     </div>`;
 
     updateLegend(el);
+
+    // Shared links (#/public-hub/voter-guide) open the guide straight away.
+    if (ctx.sub === 'voter-guide' && guide) setTimeout(() => App.voterGuide.open(t), 60);
 
     /* ---------------- interactions ---------------- */
     function rerenderFeed() {
@@ -828,11 +906,13 @@
         const going = !S.hub_rsvp[id];
         S.hub_rsvp[id] = going;
         const count = (ev ? ev.rsvps || 0 : 0) + (going ? 1 : 0);
-        a.classList.toggle('is-going', going);
-        a.setAttribute('aria-pressed', going);
-        a.textContent = going ? 'You’re going ✓' : 'RSVP';
-        const c = el.querySelector(`[data-count="${CSS_escape(id)}"]`);
-        if (c) c.textContent = U.fmtNum(count);
+        // The same event can show in the top committee panel and the sidebar; keep both in sync.
+        el.querySelectorAll(`[data-act="rsvp"][data-id="${CSS_escape(id)}"]`).forEach((b) => {
+          b.classList.toggle('is-going', going);
+          b.setAttribute('aria-pressed', going);
+          b.textContent = going ? 'You’re going ✓' : 'RSVP';
+        });
+        el.querySelectorAll(`[data-count="${CSS_escape(id)}"]`).forEach((c) => { c.textContent = U.fmtNum(count); });
         ctx.toast(going ? `You’re on the list for ${ev ? ev.title : 'this event'}. A reminder arrives the day before.` : 'RSVP removed. Your seat is open for a neighbor.', going ? 'ok' : 'info');
       }
       else if (act === 'cand') ctx.navigate('candidate/microsite/' + a.dataset.id);
@@ -840,6 +920,17 @@
       else if (act === 'volunteer') openVolunteer();
       else if (act === 'donate') ctx.toast(`Donations open on ${t.shortName}’s secure donate page. Every gift funds local precinct work.`, 'ok');
       else if (act === 'contact') ctx.toast(`Messages go straight to the ${t.shortName} volunteer inbox.`, 'info');
+      else if (act === 'join') ctx.toast(`Membership sign-up opens on ${t.shortName}’s secure join page. Members get meeting notices and voting updates.`, 'ok');
+      else if (act === 'calendar') ctx.toast(`Calendar invite for the ${t.meeting ? t.meeting.title : 'committee meeting'} downloaded.`, 'ok');
+      else if (act === 'agenda' && t.meeting) {
+        const m = t.meeting;
+        ctx.modal({
+          title: `${m.title} — agenda`,
+          html: `<p class="muted" style="margin-top:0">${esc(fmtDate(m.date).long)} · ${esc(m.time)} · ${esc(m.provider || '')}. Members of the public are welcome to attend.</p>
+            <ol style="margin:0;padding-left:22px;line-height:1.7;font-size:15.5px">${(m.agenda || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ol>`,
+          actions: [{ label: 'Add to calendar', onClick: () => { ctx.toast(`Calendar invite for the ${m.title} downloaded.`, 'ok'); } }, { label: 'Close', primary: true }],
+        });
+      }
       else if (act === 'portal') ctx.navigate('portal');
     });
   }
