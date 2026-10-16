@@ -478,6 +478,16 @@
   /* Public campaign site link when the candidate's site is live. */
   C.campaignSite = (c) => { const x = C.campaignSiteFor(c); return x && x.status === 'live' ? x : null; };
   C.campaignHref = (c) => { const x = C.campaignSite(c); return x ? `campaign.html?county=${SLUG}&c=${encodeURIComponent(x.slug || kebab(c.name))}` : ''; };
+  /* Campaign events (event.campaign = campaign site slug): who runs it and where it links. */
+  C.campaignOf = (ev) => {
+    if (!ev || !ev.campaign) return null;
+    const slug = String(ev.campaign);
+    const site = Store.list('campaignSites').find((x) => x && x.slug === slug) || null;
+    const pool = (T.candidates || []).concat(Store.list('candidates'));
+    const cand = (site && pool.find((c) => c.id === site.candidateId)) || pool.find((c) => kebab(c.name) === slug) || null;
+    const name = (cand && cand.name) || (site && site.name) || slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return { slug, name, href: `campaign.html?county=${SLUG}&c=${encodeURIComponent(slug)}` };
+  };
   C.videos = () => (N.videos || []).slice();
 
   /* ---------------- shared rendering helpers ---------------- */
@@ -830,7 +840,7 @@
   const pages = {};
   function parse() {
     const h = (location.hash || '').replace(/^#\/?/, '');
-    const parts = h.split('/').filter(Boolean).map((s) => { try { return decodeURIComponent(s); } catch (e) { return s; } });
+    const parts = h.split('?')[0].split('/').filter(Boolean).map((s) => { try { return decodeURIComponent(s); } catch (e) { return s; } });
     const [a, b] = parts;
     if (!a) return { name: 'home' };
     if (a === 'events' && b) return { name: 'event', id: b };
@@ -949,7 +959,7 @@
       if (d && d.type === 'add' && k === 'posts' && d.doc && (d.doc.status || 'published') === 'published') liveRefresh({ announce: `New from ${T.shortName}: ${d.doc.title || ''}` });
       else liveRefresh();
     };
-    ['posts', 'events', 'localAds', 'siteSettings', 'rsvps', 'volunteers', 'memberships', 'donations', 'campaignSites', 'candidates', 'candidateStatus', 'petitions', 'signatures', 'networkPrefs', 'hiddenPushes', 'pinnedPushes', 'reset']
+    ['posts', 'events', 'localAds', 'siteSettings', 'rsvps', 'volunteers', 'memberships', 'donations', 'campaignSites', 'candidates', 'candidateStatus', 'petitions', 'signatures', 'optOuts', 'networkPrefs', 'hiddenPushes', 'pinnedPushes', 'reset']
       .forEach((k) => Store.on(k, guard(k, onScoped)));
     ['networkPushes', 'networkAds', 'session', 'accounts', 'reset'].forEach((k) => Store.global.on(k, guard(k, () => liveRefresh())));
   }

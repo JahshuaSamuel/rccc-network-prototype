@@ -88,7 +88,7 @@
 .scr-master .kpi-value { font-variant-numeric: tabular-nums; }
 .scr-master .mn-kpi-note { font-size:13px; color: var(--ink-3); margin-top:2px; }
 .scr-master .mn-kpi-note b { color: var(--ok); }
-.scr-master .mn-now { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:14px; }
+.scr-master .mn-now { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; }
 .scr-master .mn-now a { display:flex; gap:12px; align-items:flex-start; padding:16px; border-radius: var(--r-lg); border:1px solid var(--line); background: var(--surface);
   text-decoration:none; color: var(--ink); transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; min-width:0; }
 .scr-master .mn-now a:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: color-mix(in srgb, var(--master) 40%, white); color: var(--ink); }
@@ -504,6 +504,12 @@
     return `${r.kind} · ${where}`;
   }
 
+  /* Statewide CRM totals: aggregates only, from App.crm.stats(slug). Never individual records. */
+  function crmStats() {
+    if (!(App.crm && App.crm.stats)) return [];
+    return liveSlugs().map((slug) => { let st = null; try { st = App.crm.stats(slug); } catch (e) { st = null; } return st ? Object.assign({ slug }, st) : null; }).filter(Boolean);
+  }
+
   function savedTotals() {
     const live = liveSlugs().map(countyStats);
     const sum = (k) => live.reduce((a, s) => a + s[k].saved, 0);
@@ -571,6 +577,16 @@
         <a href="#/master/ads"><span class="mn-now-ic">${I('<rect x="3" y="5" width="14" height="10" rx="2"/><path d="M6 9h5M6 12h3"/>')}</span><span>
           <strong>${running.length ? `${plural(running.length, 'network ad')} running` : 'Sample ads fill the network slots'}</strong>
           <span class="small">${running.length ? esc(running.map((a) => a.title).slice(0, 2).join(' · ')) : 'Create a network ad to replace a sample in any slot.'}</span></span></a>
+        ${(() => {
+          const cs = crmStats();
+          if (!cs.length) return '';
+          const ppl = cs.reduce((a, x) => a + (x.people || 0), 0), nw = cs.reduce((a, x) => a + (x.newThisMonth || 0), 0);
+          const calls = cs.reduce((a, x) => a + (x.callsMade || 0), 0);
+          const talked = cs.reduce((a, x) => a + Math.round((x.responseRate || 0) / 100 * (x.callsMade || 0)), 0);
+          return `<a href="#/master/analytics"><span class="mn-now-ic">${I('<circle cx="7" cy="7" r="2.5"/><circle cx="13.5" cy="8" r="2"/><path d="M2.5 16c.6-2.8 2.4-4.2 4.5-4.2s3.9 1.4 4.5 4.2M11.5 12.3c2.3-.4 4.2.8 5 3.7"/>')}</span><span>
+            <strong>${plural(ppl, 'person', 'people')} on county lists</strong>
+            <span class="small">${U.fmtNum(nw)} new this month${calls ? `, and ${Math.round(talked / calls * 100)}% of ${plural(calls, 'call')} reached someone` : ''}. Totals only.</span></span></a>`;
+        })()}
       </div>
 
       <div class="mn-block">
@@ -1183,6 +1199,42 @@
         }).join('')}</div></div>`;
     }).join('');
 
+    function crmSection() {
+      const cs = crmStats();
+      if (!cs.length) return '';
+      const pctRow = (q, sub, key, extra) => `<div class="mn-cmp-row"><div class="mn-cmp-q">${q}<small>${sub}</small></div><div class="mn-bars">${cs.map((x) => {
+        const v = Number(x[key]) || 0, col = SERIES[x.slug] || 'var(--master)';
+        const note = extra ? extra(x) : '';
+        const none = key === 'responseRate' && !x.callsMade;
+        return `<div class="mn-bar" tabindex="0" data-tip="${esc(`<b>${none ? 'No calls yet' : v + '%'}</b>${shortLabel(x.slug)} · ${sub}${note ? '<br>' + note : ''}`)}" aria-label="${esc(`${shortLabel(x.slug)}: ${none ? 'no calls logged yet' : v + ' percent'}`)}">
+          <span class="mn-bar-name">${esc(x.slug === 'demo' ? 'Demo' : shortLabel(x.slug))}</span>
+          <span class="mn-bar-track" style="background:var(--surface-2);box-shadow: inset 0 0 0 1px var(--line)"><span class="mn-bar-fill" style="width:${Math.min(100, v).toFixed(1)}%"><i style="flex:1;background:${col}"></i></span></span>
+          <span class="mn-bar-val">${none ? '<span class="muted" style="font-weight:600">No calls yet</span>' : v + '%'}</span></div>`;
+      }).join('')}</div></div>`;
+      const maxP = Math.max(1, ...cs.map((x) => x.people || 0));
+      const growth = `<div class="mn-cmp-row"><div class="mn-cmp-q">Whose list is growing?<small>People on the committee list, with the share added this month</small></div><div class="mn-bars">${cs.map((x) => {
+        const col = SERIES[x.slug] || 'var(--master)';
+        const total = x.people || 0, nw = Math.min(total, x.newThisMonth || 0);
+        return `<div class="mn-bar" tabindex="0" data-tip="${esc(`<b>${U.fmtNum(total)} people</b>${shortLabel(x.slug)}<br>${U.fmtNum(nw)} added this month<br>${U.fmtNum(x.volunteers || 0)} volunteers · ${U.fmtNum(x.donors || 0)} donors`)}" aria-label="${esc(`${shortLabel(x.slug)}: ${total} people, ${nw} new this month`)}">
+          <span class="mn-bar-name">${esc(x.slug === 'demo' ? 'Demo' : shortLabel(x.slug))}</span>
+          <span class="mn-bar-track"><span class="mn-bar-fill" style="width:${(total / maxP * 100).toFixed(1)}%">${total - nw ? `<i style="width:${((total - nw) / Math.max(1, total) * 100).toFixed(1)}%;background:${col};opacity:.55"></i>` : ''}${nw ? `<i style="flex:1;background:${col}"></i>` : ''}</span></span>
+          <span class="mn-bar-val">${U.fmtNum(total)}${nw ? `<small>+${U.fmtNum(nw)}</small>` : ''}</span></div>`;
+      }).join('')}</div></div>`;
+      return `<div class="mn-block card" data-tour="master-crm">
+        <div class="card-head"><h3>Which counties are growing their lists, and are people answering?</h3></div>
+        <div class="card-body">
+          <div class="mn-cmp">${growth}
+            ${pctRow('Can we email them?', 'Share of the list opted in to email', 'emailOptInRate')}
+            ${pctRow('Can we text them?', 'Share of the list opted in to texts', 'smsOptInRate')}
+            ${pctRow('Are people answering?', 'Phone bank calls where someone talked', 'responseRate', (x) => `${U.fmtNum(x.callsMade || 0)} calls made · ${U.fmtNum(x.messagesSent || 0)} messages sent`)}
+          </div>
+          <p class="small muted" style="margin:12px 0 0">Master Network sees these totals only. Names, contact details and notes stay with each county.</p>
+          <details class="mn-tbl"><summary>Show these numbers as a table</summary><div class="table-wrap"><table class="table"><thead><tr><th>Measure</th>${cs.map((x) => `<th class="num">${esc(shortLabel(x.slug))}</th>`).join('')}</tr></thead><tbody>
+            ${[['People on the list', 'people', ''], ['Added this month', 'newThisMonth', ''], ['Volunteers', 'volunteers', ''], ['Donors', 'donors', ''], ['Email opt-in', 'emailOptInRate', '%'], ['Text opt-in', 'smsOptInRate', '%'], ['Calls made', 'callsMade', ''], ['Calls that reached someone', 'responseRate', '%'], ['Messages sent', 'messagesSent', ''], ['Interactions, last 30 days', 'interactions30d', '']]
+              .map(([l, k, u]) => `<tr><td>${l}</td>${cs.map((x) => `<td class="num">${u ? (x[k] || 0) + u : U.fmtNum(x[k] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>
+        </div></div>`;
+    }
+
     const recent = tot.live.flatMap((s) => s.recent).sort((a, b) => String(b.doc.createdAt || '').localeCompare(String(a.doc.createdAt || ''))).slice(0, 8);
     const feed = recent.length ? `<ul class="mn-feed">${recent.map((r) => {
       const d = r.doc;
@@ -1205,6 +1257,8 @@
           <details class="mn-tbl"><summary>Show these numbers as a table</summary><div class="table-wrap"><table class="table"><thead><tr><th>Measure</th>${data.map((s) => `<th class="num">${esc(shortLabel(s.slug))}</th>`).join('')}</tr></thead>
             <tbody>${ROWS.map((r) => `<tr><td>${r.sub}</td>${data.map((s) => `<td class="num">${fmtV(s[r.key].seed + s[r.key].saved, r.usd)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details></div>
       </div>
+
+      ${crmSection()}
 
       <div class="mn-block card">
         <div class="card-head"><h3>Where should the next canvass go?</h3><span class="spacer"></span><span class="small muted">Turfs with the most doors left are at the top</span></div>

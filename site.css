@@ -804,3 +804,16 @@ body.s-body { background: var(--s-paper); color: var(--s-ink); font-size: 16.5px
 .a-closed p { color: var(--s-ink-2); }
 @media (min-width: 640px) { .a-contact [data-a="prev"] { visibility: hidden; } }
 .a-head .s-backlink { display: flex; width: max-content; margin-bottom: 10px; }
+
+/* unsubscribe + campaign event tag */
+.u-wrap { max-width: 720px; }
+.u-card { margin-top: 28px; }
+.u-opts { display: grid; gap: 10px; }
+.u-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; min-height: 64px; padding: 14px 18px; border-radius: 14px; border: 1.5px solid #C9D0DA; background: #fff; text-align: left; cursor: pointer; font: inherit; color: var(--s-ink); transition: all .15s ease; }
+.u-opt b { font-size: 16.5px; }
+.u-opt span { font-size: 14px; color: var(--s-ink-3); }
+.u-opt:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 5%, white); transform: translateY(-1px); }
+.u-opt:last-child b { color: var(--accent); }
+.s-body .s-camp-tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 10%, white); color: var(--brand); font: 700 10.5px/1.6 var(--font-body); letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
+.s-body .s-camp-tag:hover { background: var(--brand); color: var(--brand-ink); }
+.s-body .s-eyebrow-light .s-camp-tag { background: rgba(255,255,255,.16); color: #fff; }

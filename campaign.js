@@ -110,6 +110,11 @@
     const now = new Date(); now.setHours(12, 0, 0, 0);
     return Math.round((new Date(iso + 'T12:00:00') - now) / 86400000);
   }
+  function fmtTime(hm) {
+    const p = String(hm || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!p) return String(hm || '');
+    return new Date(2000, 0, 1, +p[1], +p[2]).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
   function initials(n) { const p = String(n || '').trim().split(/\s+/); return ((p[0] || '')[0] || '') + (p.length > 1 ? p[p.length - 1][0] : ''); }
 
   const IC = {
@@ -164,6 +169,9 @@
     const user = sessionUser();
     const vols = DB.list('volunteers').filter((v) => v.campaign === m.slug).length;
     const issues = (m.issues || []).map((x) => String(x || '').trim()).filter(Boolean);
+    const todayIso = (() => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; })();
+    const events = DB.list('events').filter((e) => e.campaign === m.slug && e.status !== 'draft' && String(e.date || '') >= todayIso)
+      .sort((a, b) => String(a.date + (a.time || '')).localeCompare(String(b.date + (b.time || '')))).slice(0, 4);
 
     const heroPhoto = photoHtml(m, 'cs-hero-photo', `${m.name}, candidate for ${m.office}`);
     const endorse = m.endorsed ? `<p class="cs-endorse">${IC.star}<span>Endorsed by the ${esc(T.name)}</span></p>` : '';
@@ -171,7 +179,7 @@
     app.innerHTML = `${ribbon}
       <header class="cs-nav">
         <a class="cs-nav-name" href="#top">${esc(m.name)}</a>
-        <nav class="cs-nav-links" aria-label="Sections"><a href="#about">About</a>${issues.length ? '<a href="#priorities">Priorities</a>' : ''}${m.volunteerOn ? '<a href="#volunteer">Volunteer</a>' : ''}</nav>
+        <nav class="cs-nav-links" aria-label="Sections"><a href="#about">About</a>${issues.length ? '<a href="#priorities">Priorities</a>' : ''}${events.length ? '<a href="#events">Events</a>' : ''}${m.volunteerOn ? '<a href="#volunteer">Volunteer</a>' : ''}</nav>
         <a class="cs-btn give sm" href="${esc(m.donateUrl)}" target="_blank" rel="noopener">Donate</a>
       </header>
       <main id="cs-main" class="cs-main t-${esc(m.template)}${firstPaint ? ' cs-enter' : ''}">
@@ -207,6 +215,14 @@
         ${issues.length ? `<section class="cs-sec cs-issues-sec" id="priorities" aria-labelledby="cs-pri-h">
           <h2 id="cs-pri-h">${esc(first)}’s priorities</h2>
           <ol class="cs-issues">${issues.map((x, i) => `<li class="cs-issue" style="--i:${i}"><span class="cs-issue-n" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span><p>${esc(x)}</p></li>`).join('')}</ol>
+        </section>` : ''}
+
+        ${events.length ? `<section class="cs-sec cs-events" id="events" aria-labelledby="cs-ev-h">
+          <h2 id="cs-ev-h">Meet ${esc(first)} in person</h2>
+          <ul class="cs-evlist">${events.map((e) => { const d = new Date(e.date + 'T12:00:00'); return `<li class="cs-ev">
+            <span class="cs-ev-date" aria-hidden="true"><small>${esc(d.toLocaleDateString('en-US', { month: 'short' }))}</small><b>${d.getDate()}</b></span>
+            <span class="cs-ev-txt"><b>${esc(e.title)}</b><span>${esc(d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))}${e.time ? ` · ${esc(fmtTime(e.time))}` : ''}</span>${e.location ? `<span>${esc(e.location)}</span>` : ''}</span>
+          </li>`; }).join('')}</ul>
         </section>` : ''}
 
         ${m.volunteerOn ? `<section class="cs-sec cs-vol" id="volunteer" aria-labelledby="cs-vol-h">
@@ -382,7 +398,7 @@
     document.documentElement.classList.add('cs-is-preview');
   }
   /* Another tab (or the builder) saved changes. */
-  ['campaignSites', 'candidateStatus', 'volunteers'].forEach((n) => DB.on(n, (d) => {
+  ['campaignSites', 'candidateStatus', 'volunteers', 'events'].forEach((n) => DB.on(n, (d) => {
     if (d && d.type === 'external') render();
   }));
 

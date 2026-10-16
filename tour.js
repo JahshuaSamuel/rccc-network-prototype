@@ -85,7 +85,7 @@
     { main: true, route: 'overview', target: 'overview-shortcuts', role: B, tenant: 'svgop',
       title: 'Your shortcuts, with today’s numbers',
       body: 'After you sign in, the overview greets you by name and shows the jobs that fit your account: for the board chair, campaign plans waiting for approval, doors left to knock and open ballots.' },
-    { main: true, route: 'overview', target: 'nav', role: B,
+    { main: false, route: 'overview', target: 'nav', role: B,
       prepare: () => { if (window.innerWidth <= 900) document.body.classList.add('drawer-open'); },
       cleanup: () => { document.body.classList.remove('drawer-open'); },
       title: 'Every tool sits in one menu',
@@ -117,7 +117,7 @@
     { main: true, route: 'portal/ads', target: 'portal-ads-map', role: B,
       title: 'See every ad slot on your site',
       body: 'This map shows every ad slot on your site and who fills it. Network slots carry statewide sponsors, and local slots are yours to fill with businesses and supporters from your county.' },
-    { main: true, route: 'portal/network', target: 'portal-chat', role: B,
+    { main: false, route: 'portal/network', target: 'portal-chat', role: B,
       title: 'Counties help each other here',
       body: 'Neighboring committees share a regional channel to plan joint events and trade what works, like a final-week door hanger another county already printed.' },
     { main: false, route: 'portal/network', target: 'portal-assets', role: B,
@@ -129,7 +129,7 @@
       title: 'The whole network in five numbers',
       body: 'These five numbers add up every county on the platform: live sites, weekly visitors, candidates recruited, volunteers and money raised online.',
       tip: 'The tour signs in as the sample Master Network admin for this chapter.' },
-    { main: true, route: 'master', target: 'master-map', role: M,
+    { main: false, route: 'master', target: 'master-map', role: M,
       title: 'Every county on one map',
       body: 'Network admins see every county on one map, with live counties and counties still setting up in different colors. County boards see only their own county.' },
     { main: true, route: 'master/push', target: 'push-targeting', role: M,
@@ -152,7 +152,7 @@
       body: 'Each network slot shows the newest running ad for that county. Create, pause or edit an ad here, and a sample fills any slot you haven’t claimed.' },
     { main: true, route: 'master/analytics', target: 'master-analytics', role: M,
       title: 'See which counties are moving',
-      body: 'Every chart answers a question a state director asks: who is showing up, who is knocking doors and where the money comes from. The numbers include every RSVP, sign-up, gift and door saved on the county sites.' },
+      body: 'Every chart answers a question a state director asks: who is showing up, who is knocking doors, where the money comes from and whose list is growing. County lists appear as totals only. The numbers include every RSVP, sign-up, gift and door saved on the county sites.' },
 
     /* ===== Campaign-in-a-Box ===== */
     { chapter: 'Campaign-in-a-Box', main: true, route: 'candidate', target: 'cand-pipeline', role: B,
@@ -161,7 +161,7 @@
     { main: true, route: 'candidate/builder', target: 'wizard-steps', role: B,
       title: 'A campaign site in a few guided steps',
       body: 'Candidates answer plain questions about the office, district, issues and committee details. The builder turns those answers into a campaign site, a donate page, print proofs and a week of draft posts.' },
-    { main: false, route: 'candidate/builder', target: 'wizard-launch', role: B,
+    { main: false, route: 'candidate/builder', target: 'wizard-launch', role: B, sel: '[data-tour="wizard-launch"], [data-tour="wizard-steps"]',
       title: 'The board reviews before anything goes live',
       body: 'On the last step the campaign site goes to the Executive Board for review. A board member approves it and the site opens at its own address, with the disclaimer in place.' },
     { main: false, route: 'candidate/microsite', target: 'microsite-donate', role: B,
@@ -185,7 +185,7 @@
       title: 'Read the map at a glance',
       body: 'The map key names each turf’s color and shows which households are knocked. Filter by turnout score and support score so volunteers spend their time on the doors that count.',
       action: { label: 'Open the map key', run: () => { const d = q('[data-tour="field-filters"]'); if (d && d.tagName === 'DETAILS') d.open = true; } } },
-    { main: true, route: 'field', target: 'field-privacy', role: B,
+    { main: false, route: 'field', target: 'field-privacy', role: B,
       title: 'Voter data stays in your county',
       body: 'Voter files live inside your county’s own space. Volunteers see only the addresses on their own walk list, and the county decides who sees more.' },
     { main: false, route: 'field/list', target: 'field-build', role: B,
@@ -198,6 +198,33 @@
       title: 'Keeps working with weak signal',
       body: 'Doors recorded with weak signal are saved on the phone and send once it reconnects.' },
 
+    /* ===== People & Outreach ===== */
+    { chapter: 'People & Outreach', main: true, route: 'people', role: B, sel: '#main .crm-t, #main .crm-nav',
+      title: 'Everyone your committee knows, on one list',
+      body: 'Every RSVP, volunteer sign-up, donation and door knocked on your public site lands here as a person, with support level, roles and the volunteer who looks after them. Search, filter and save lists for outreach.' },
+    { main: true, role: B, route: () => { let id = ''; try { const p = App.crm.people('committee')[0]; id = p ? p.id : ''; } catch (e) { /* ignore */ } return id ? 'people/' + id : 'people'; },
+      sel: '.crm-pf, #main .crm-t', wait: 3000,
+      title: 'One profile per person',
+      body: 'A profile shows everything that person has done with the committee, from events and shifts to calls and gifts, plus their follow-ups. Contact preferences and “do not contact” are respected everywhere.' },
+    { main: true, route: 'people/paths', role: B, wait: 3000,
+      pick: () => { const c = document.querySelector('#main .crm-col'); return c && visible(c) ? c.parentElement : null; },
+      title: 'Move volunteers along a path',
+      body: 'Paths are boards for steps like a new volunteer’s welcome call, first shift and team lead talk. Drag a person to the next step, and the platform suggests who is ready based on their shifts and walks.' },
+    { main: true, route: 'outreach/compose', role: B, sel: '#main .oc-side, #main .oc-form', wait: 3000,
+      title: 'Email or text a list, the legal way',
+      body: 'Write once to a saved list. Before you send, it shows exactly who gets it and who is skipped: people who opted out, have no address on file or are marked do not contact. The “Paid for by” line and the opt-out footer are added for you.' },
+    { main: true, route: 'outreach/calls', role: B, wait: 3000,
+      pick: () => { const a = document.querySelector('#main a[href^="#/outreach/calls/cc-"]'); const c = a && (a.closest('.card') || a.closest('article') || a.parentElement); return c && visible(c) ? c : null; },
+      title: 'Run a phone bank from any browser',
+      body: 'A call campaign hands each volunteer the next person to call with a script and survey. Every call is logged on the person’s profile, and Master Network sees only the totals.' },
+    { main: true, route: 'mycampaign', role: 'candidate', sel: '#main .mc-hero, #main h1', wait: 3000,
+      tip: 'The tour signs in as a sample candidate for these two steps, then switches back.',
+      title: 'Candidates get their own campaign home',
+      body: 'When the board endorses a candidate, the candidate signs in to My Campaign: their site, their supporters, outreach, print and social posts. The campaign’s list is its own, separate from the committee’s.' },
+    { main: true, route: 'mycampaign', role: 'candidate', sel: '#mc-suggestions, #main .mc-todo', wait: 3000,
+      title: 'The committee suggests, the candidate decides',
+      body: 'Board members can suggest changes to a candidate’s site or propose events. Suggestions wait here, and the candidate accepts or declines each one.' },
+
     /* ===== Meetings ===== */
     { chapter: 'Meetings & Voting', main: false, route: 'governance', target: 'gov-meeting', role: B, prepare: startMeeting,
       title: 'The agenda, on the meeting page',
@@ -206,7 +233,7 @@
       tip: 'The tour starts the sample October meeting so you can see check-in and the ballots open.',
       title: 'The platform counts quorum for you',
       body: 'As members check in, the platform counts seated members and verified proxies and shows the moment you reach quorum, so the chair knows exactly when the committee can vote.' },
-    { main: true, route: 'governance/ballots', target: 'gov-ballot', role: B, prepare: startMeeting,
+    { main: false, route: 'governance/ballots', target: 'gov-ballot', role: B, prepare: startMeeting,
       title: 'Vote by secret ballot or roll call',
       body: 'Run a secret ballot, a roll call or a weighted vote right inside the meeting. Each member votes once, and results are measured against your bylaws’ threshold.' },
     { main: false, route: 'governance/ballots', target: 'gov-receipt', role: B, prepare: startMeeting,
@@ -244,6 +271,12 @@
         run: () => { const b = q('[data-act="approve-ready"]'); if (b) b.click(); else scrollTo('.dr-log, .dr-main .card:last-child'); },
       } },
   ];
+
+  // Steps can target a stable CSS selector (sel) when a screen has no data-tour id.
+  ALL.forEach((s) => {
+    if (s.sel && !s.pick) s.pick = () => { for (const el of document.querySelectorAll(s.sel)) { if (visible(el)) return el; } return null; };
+    if (!s.target) s.target = 'none';
+  });
 
   // Carry chapter names forward so every step knows its chapter.
   let ch = '';
@@ -553,9 +586,13 @@ body.tour-on #toasts{z-index:2100}
     const s = curStep;
 
     // Role / tenant first (silently), then route.
-    if (s.role && App.state.role !== s.role) App.setRole(s.role, true);
+    if (s.role && App.state.role !== s.role) {
+      if (s.role === 'candidate') { if (App.auth && App.auth.signInSample) App.auth.signInSample('candidate', { silent: true }); }
+      else App.setRole(s.role, true);
+    }
     if (s.tenant && App.state.tenant !== s.tenant) App.setTenant(s.tenant, true);
-    const want = norm(s.route);
+    let want = '';
+    try { want = norm(typeof s.route === 'function' ? s.route() : s.route); } catch (e) { want = ''; }
     if (want && routeKey() !== want) App.go(want);
 
     renderCard(false);

@@ -189,7 +189,19 @@
 
   function mountOutreach(el, ctx, opts) {
     const kit = K();
-    if (!kit) { el.innerHTML = '<div class="page"><p class="muted">Outreach is still loading. Reload the page in a moment.</p></div>'; return; }
+    if (!kit || !window.App.crm || !window.DATA) {
+      // The kit (screens/people.js) or the engine (crm.js) isn't in yet: show a quiet skeleton and mount the moment both are.
+      el.classList.add('crm');
+      el.innerHTML = '<div class="page crm-page" aria-busy="true"><div style="height:44px;width:40%;border-radius:10px;background:var(--surface-2);margin-bottom:18px"></div><div style="height:260px;border-radius:14px;background:var(--surface-2)"></div></div>';
+      let tries = 0;
+      const retry = () => {
+        if (!el.isConnected) return;
+        if (K() && window.App.crm && window.DATA) { mountOutreach(el, ctx, opts); return; }
+        if (++tries < 300) setTimeout(retry, 100);
+      };
+      setTimeout(retry, 100);
+      return { el, owner: (opts || {}).owner || 'committee' };
+    }
     kit.injectStyles();
     injectStyles();
     const C = CRM();
@@ -339,7 +351,7 @@
             <label><input type="radio" name="when" value="later"${D.when === 'later' ? ' checked' : ''}> Schedule for later</label>
             <input class="input" type="datetime-local" name="at" value="${esc(D.at)}" aria-label="Send date and time"${D.when === 'later' ? '' : ' hidden'}></div></div>
         </form>
-        <div class="oc-side">
+        <div class="oc-side" data-tour="outreach-compose">
           <div class="oc-pvh"><span data-pvwho></span><span class="sp"></span><button class="crm-ibtn" type="button" data-act="pv" data-v="-1" aria-label="Preview the previous person">${OI.left}</button><button class="crm-ibtn" type="button" data-act="pv" data-v="1" aria-label="Preview the next person">${OI.right}</button></div>
           <div data-preview aria-live="off"></div>
           <div class="oc-sum" data-summary aria-live="polite"></div>
@@ -451,11 +463,11 @@
       const newFor = query.get('new');
       if (newFor && canSend) { setTimeout(() => go('calls/edit/new?list=' + encodeURIComponent(newFor)), 0); }
       if (!cs.length) {
-        sec.innerHTML = emptyState({ art: ART.path, title: 'No call campaigns yet', body: 'Pick a saved list and write a short script. Callers get one contact at a time on their phone, with tap-to-call.', action: canSend ? `<a class="btn btn-primary" href="${esc(href('calls/edit/new'))}">${IC.plus} New call campaign</a>` : '' });
+        sec.innerHTML = '<div data-tour="outreach-calls">' + emptyState({ art: ART.path, title: 'No call campaigns yet', body: 'Pick a saved list and write a short script. Callers get one contact at a time on their phone, with tap-to-call.', action: canSend ? `<a class="btn btn-primary" href="${esc(href('calls/edit/new'))}">${IC.plus} New call campaign</a>` : '' }) + '</div>';
         return;
       }
       sec.innerHTML = `${canSend ? `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><a class="btn btn-sm" href="${esc(href('calls/edit/new'))}">${IC.plus} New call campaign</a></div>` : ''}
-        <div class="pb-cards">${cs.map((c) => {
+        <div class="pb-cards" data-tour="outreach-calls">${cs.map((c) => {
           const pr = C.callProgress(c.id);
           const pct = pr.total ? (pr.called / pr.total) * 100 : 0;
           const tal = pr.total ? (pr.outcomes.talked / pr.total) * 100 : 0;

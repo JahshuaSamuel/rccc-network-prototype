@@ -889,18 +889,16 @@
     return list.filter((i) => i && i.campaignSlug === slug);
   }
   function teamFor(slug, tenant) {
-    let accts = [];
-    try { accts = Store.global.list('accounts'); } catch (e) { accts = []; }
-    return accts.filter((a) => a.role === 'candidate' && a.campaignSlug === slug && (!a.tenant || a.tenant === tenant));
+    if (App.auth && typeof App.auth.campaignTeam === 'function') return (App.auth.campaignTeam(slug) || []).filter((a) => !a.tenant || a.tenant === tenant);
+    return [];
   }
   function ownerInfo(ctx, c) {
     const d = view(c, ctx);
     const inv = invitesFor(d.slug);
     const owned = !!(siteOf(c) || {}).handedOver || inv.some((i) => i.status === 'claimed' && (i.campaignRole || 'owner') === 'owner');
     /* Sample candidate accounts count once the campaign is handed over. */
-    const all = teamFor(d.slug, ctx.tenantSlug);
-    const real = all.filter((a) => !a.sample);
-    const team = real.length ? real : (owned ? all : []);
+    /* campaignTeam hides superseded sample accounts; an unclaimed sample owner shows once the site is handed over. */
+    const team = teamFor(d.slug, ctx.tenantSlug).filter((a) => owned || !a.sample);
     return { slug: d.slug, owned, invites: inv, owners: team.filter((a) => (a.campaignRole || 'owner') === 'owner'), staff: team.filter((a) => a.campaignRole === 'staff') };
   }
   function acctName(id) { try { const a = Store.global.list('accounts').find((x) => x.id === id); return a ? a.name : ''; } catch (e) { return ''; } }
@@ -1420,15 +1418,16 @@
       if (rs) {
         const i = inv(rs.dataset.invResend);
         if (!i) return;
-        if (App.auth && typeof App.auth.resendInvite === 'function') { try { App.auth.resendInvite(i.id); } catch (x) { /* falls back to the link below */ } }
-        showLink(i); return;
+        const r = App.auth && typeof App.auth.resendInvite === 'function' ? App.auth.resendInvite(i.id) : null;
+        if (!r) showLink(i); else if (!r.ok) ctx.toast(r.error, 'warn');
+        return;
       }
       const rv = e.target.closest('[data-inv-revoke]');
       if (rv) {
         const i = inv(rv.dataset.invRevoke);
         if (!i) return;
-        const r = App.auth && typeof App.auth.revokeInvite === 'function' ? App.auth.revokeInvite(i.id) : (Store.update('invites', i.id, { status: 'revoked' }), { ok: true });
-        if (r && r.ok === false) { ctx.toast(r.error, 'warn'); return; }
+        const r = App.auth.revokeInvite(i.id);
+        if (!r || !r.ok) { ctx.toast((r && r.error) || 'The invite could not be revoked.', 'warn'); return; }
         ctx.toast(`Invite for ${i.email} revoked. The link no longer works.`, 'info'); App.rerender(); return;
       }
       if (e.target.closest('[data-endorse-pause]')) {

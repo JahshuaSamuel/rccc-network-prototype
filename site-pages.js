@@ -92,6 +92,11 @@
     const cap = ev.capacity ? ` of ${util.fmtNum(ev.capacity)} spots` : '';
     return `<span class="s-going">${ICON.people}<b>${util.fmtNum(ev.going)}</b> going${cap}</span>`;
   }
+  /* Small "<Candidate> campaign" tag for events a campaign proposed and the board listed. */
+  function campTag(ev) {
+    const c = C.campaignOf(ev);
+    return c ? `<a class="s-camp-tag" href="${esc(c.href)}"${S.framed ? ' target="_top"' : ''}>${esc(c.name)} campaign</a>` : '';
+  }
   function rsvpButton(ev, cls) {
     if (ev.myRsvp) return `<a class="s-btn s-btn-sm s-btn-going ${cls || ''}" href="#/events/${encodeURIComponent(ev.id)}">${ICON.check}<span>You’re going</span></a>`;
     if (ev.full) return `<span class="s-btn s-btn-sm s-btn-disabled ${cls || ''}" aria-disabled="true">Event is full</span>`;
@@ -102,7 +107,7 @@
     return `<div class="s-erow">
       ${H.dateBlock(ev.date)}
       <div class="s-erow-info">
-        <span class="s-kicker">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}</span>
+        <span class="s-kicker">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}${campTag(ev)}</span>
         <a class="s-erow-title" href="#/events/${encodeURIComponent(ev.id)}">${esc(ev.title)}</a>
         <span class="s-erow-sub">${esc(d.dow)} · ${esc(ev.time || '')} · ${esc(S.C.city(ev))}</span>
         <div class="s-erow-act">${rsvpButton(ev)}${goingLine(ev)}</div>
@@ -543,7 +548,7 @@
         return `<article class="s-ecard s-reveal${ev.myRsvp ? ' is-going' : ''}" data-ev="${esc(ev.id)}" tabindex="-1">
           ${H.dateBlock(ev.date, 'is-big')}
           <div class="s-ecard-body">
-            <span class="s-kicker">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}</span>
+            <span class="s-kicker">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}${campTag(ev)}</span>
             <h2 class="s-ecard-title"><a href="#/events/${encodeURIComponent(ev.id)}">${esc(ev.title)}</a></h2>
             <p class="s-ecard-facts"><span>${ICON.clock}${esc(d.long)} · ${esc(ev.time || '')}</span><span>${ICON.pin}${esc(ev.location || '')}</span></p>
             <div class="s-ecard-act">${rsvpButton(ev)}<a class="s-btn s-btn-sm s-btn-quiet" href="#/events/${encodeURIComponent(ev.id)}">Details</a>${goingLine(ev)}</div>
@@ -643,7 +648,7 @@
           <div class="s-evhero-grid">
             ${H.dateBlock(ev.date, 'is-hero')}
             <div>
-              <p class="s-eyebrow s-eyebrow-light">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}</p>
+              <p class="s-eyebrow s-eyebrow-light">${esc(ev.kind || 'Event')}${ev.sample ? ' ' + H.sample() : ''}${campTag(ev)}</p>
               <h1 class="s-evhero-title">${esc(ev.title)}</h1>
             </div>
           </div>
@@ -658,6 +663,7 @@
           </dl>
           <div class="s-evmap" id="s-evmap" role="region" aria-label="Map of the event location"><div class="s-map-loading">Loading the map…</div></div>
           <p class="s-map-note">${SLUG === 'demo' ? 'Sample area near Visalia. ' : ''}<a href="https://www.openstreetmap.org/?mlat=${ev.lat}&mlon=${ev.lng}#map=15/${ev.lat}/${ev.lng}" target="_blank" rel="noopener">Open in a full map ${ICON.out}</a></p>
+          ${C.campaignOf(ev) ? `<p class="s-note">Hosted by the ${esc(C.campaignOf(ev).name)} campaign and listed by ${esc(T.shortName)}. <a href="${esc(C.campaignOf(ev).href)}"${S.framed ? ' target="_top"' : ''}>Visit the campaign site ${ICON.arrow}</a></p>` : ''}
           <div class="s-ev-share">
             <button class="s-btn s-btn-quiet" type="button" data-act="ics-top">${ICON.cal}<span>Add to calendar</span></button>
             <button class="s-btn s-btn-quiet" type="button" data-act="copy">${ICON.share}<span>Copy link</span></button>
@@ -1004,6 +1010,75 @@
         }).join('') : '<div class="s-empty">Endorsements are announced after the next central committee meeting.</div>'}
       </section>`)}`;
     return { title: 'Candidates', description: `Candidates endorsed by ${T.name} in the ${g ? g.election : 'next election'}.` };
+  });
+
+  /* ================= UNSUBSCRIBE ================= */
+  /* Email footers link here. One tap after the contact is known; writes Store 'optOuts' {email?, phone?, channel}. */
+  const unsub = { last: null };
+  function unsubParams() {
+    const q = new URLSearchParams(location.search);
+    const h = new URLSearchParams((location.hash.split('?')[1]) || '');
+    return { email: (h.get('email') || q.get('email') || '').trim(), phone: (h.get('phone') || q.get('phone') || '').trim() };
+  }
+  S.register('unsubscribe', (el) => {
+    const pre = unsubParams();
+    const known = pre.email || pre.phone;
+    const shown = pre.email ? pre.email.toLowerCase() : pre.phone ? H.formatContact(pre.phone) : '';
+    const CH = [
+      { id: 'email', label: 'Stop emails', sub: 'You can still get texts if you signed up for them.' },
+      { id: 'sms', label: 'Stop texts', sub: 'You can still get emails if you signed up for them.' },
+      { id: 'all', label: `Stop everything from ${T.shortName}`, sub: 'No emails, texts or calls from the committee.' },
+    ];
+    el.innerHTML = `
+      <section class="s-pagehead"><div class="s-wrap u-wrap">
+        <p class="s-eyebrow">${STAR(13, 'var(--accent)')} Email and text preferences</p>
+        <h1>Choose what ${esc(T.shortName)} sends you</h1>
+        <p class="s-lede">${known ? `This applies to <b>${esc(shown)}</b>.` : 'Enter the email address or mobile number we contact you at, then pick one option.'}</p>
+      </div></section>
+      <div class="s-wrap u-wrap"><div class="s-formcard u-card" id="u-card">
+        <form class="s-form" novalidate id="u-form">
+          ${known ? '' : H.field({ name: 'contact', label: 'Email or mobile phone', autocomplete: 'email' })}
+          <div class="u-opts" role="group" aria-label="What to stop">${CH.map((c) => `<button type="submit" class="u-opt" name="channel" value="${c.id}"><b>${esc(c.label)}</b><span>${esc(c.sub)}</span></button>`).join('')}</div>
+          <p class="s-form-foot">If a message was already on its way, one more may still reach you. Questions? Reply to any ${esc(T.shortName)} email.</p>
+        </form>
+      </div></div>`;
+    const card = el.querySelector('#u-card');
+    const form = el.querySelector('#u-form');
+    let channel = 'email';
+    form.addEventListener('click', (e) => { const b = e.target.closest('.u-opt'); if (b) channel = b.value; });
+    if (!known) H.liveValidate(form, { contact: V.contact });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (e.submitter && e.submitter.value) channel = e.submitter.value;
+      let email = pre.email, phone = pre.phone;
+      if (!known) {
+        if (!H.validate(form, { contact: V.contact })) return;
+        const raw = form.contact.value.trim();
+        if (raw.includes('@')) email = raw; else phone = raw;
+      }
+      const doc = { channel, title: `Unsubscribed (${channel === 'all' ? 'everything' : channel === 'sms' ? 'texts' : 'emails'})` };
+      if (email) doc.email = email.toLowerCase();
+      if (phone) doc.phone = phone.replace(/\D/g, '').slice(-10);
+      const saved = S.quietly(() => Store.add('optOuts', doc));
+      unsub.last = saved.id;
+      form.dataset.dirty = '0';
+      const what = channel === 'all' ? `You won’t hear from ${esc(T.shortName)} again` : channel === 'sms' ? `${esc(T.shortName)} won’t text you again` : `${esc(T.shortName)} won’t email you again`;
+      card.innerHTML = `<div class="s-done is-fresh" role="status">
+        <span class="s-done-mark">${ICON.check}</span>
+        <h2 tabindex="-1">You’re unsubscribed.</h2>
+        <p>${what} at ${esc(doc.email || H.formatContact(doc.phone))}.</p>
+        <div class="s-done-actions"><button class="s-btn s-btn-quiet" type="button" data-u="undo">Undo</button><a class="s-btn s-btn-quiet" href="#/">Go to the home page</a></div>
+      </div>`;
+      card.querySelector('h2').focus({ preventScroll: true });
+    });
+    card.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-u="undo"]') || !unsub.last) return;
+      S.quietly(() => Store.remove('optOuts', unsub.last));
+      unsub.last = null;
+      S.toast('Undone. Your preferences are back to how they were.', 'info');
+      S.rerender();
+    });
+    return { title: 'Email and text preferences', description: `Stop emails or texts from ${T.name}.` };
   });
 
   /* ================= NOT FOUND ================= */

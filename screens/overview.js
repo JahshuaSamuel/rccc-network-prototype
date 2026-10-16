@@ -237,6 +237,28 @@
   }
   function fmtDay(s) { const d = new Date(String(s) + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
 
+  /* Live CRM numbers for the shortcuts (the person's own county; aggregates and their own follow-ups only). */
+  function crmNums(ctx) {
+    const C = App.crm;
+    if (!C || !C.stats) return null;
+    try {
+      const st = C.stats(ctx.tenantSlug) || {};
+      const me = C.me ? C.me('committee') : null;
+      const today = new Date(); today.setDate(today.getDate() + 7);
+      const lim = today.toISOString().slice(0, 10);
+      const due = me ? C.tasks('committee', { done: false, assigneeId: me.id }).filter((x) => !x.due || x.due <= lim).length : 0;
+      return { people: st.people || 0, newThisMonth: st.newThisMonth || 0, due };
+    } catch (e) { return null; }
+  }
+  function campaignNums(ctx) {
+    const out = { people: 0, todo: 0 };
+    const c = App.auth && App.auth.campaign ? App.auth.campaign() : null;
+    const slug = (c && c.slug) || (ctx.user && ctx.user.campaignSlug);
+    try { if (slug && App.crm) out.people = App.crm.people('campaign:' + slug).length; } catch (e) { /* ignore */ }
+    try { out.todo = Store.list('siteSuggestions').filter((x) => (x.slug === slug || x.campaignSlug === slug) && (!x.status || x.status === 'pending')).length; } catch (e) { /* ignore */ }
+    return out;
+  }
+
   function shortcuts(ctx, n) {
     const t = ctx.tenant || {};
     const site = `index.html?county=${encodeURIComponent(ctx.tenantSlug)}`;
@@ -248,20 +270,34 @@
       sc({ ic: IC.chart, title: 'Compare the counties', num: null, note: 'RSVPs, volunteers, doors and donations, side by side for every live county.', href: '#/master/analytics', go: 'Open analytics', master: true }),
       sc({ ic: IC.plan, title: 'AI Campaign Director', num: n.waiting || null, note: n.waiting ? `Plan items in ${t.shortName} waiting for approval.` : `Plan a campaign for an endorsed ${t.shortName} candidate.`, href: '#/director', go: 'Open the Director', master: true }),
     ];
+    const crm = crmNums(ctx);
+    const peopleSc = crm ? sc({ ic: IC.user, title: 'People', num: crm.people, note: `People on the ${t.shortName} list${crm.newThisMonth ? `, ${crm.newThisMonth} added this month` : ''}. Open a profile to see every RSVP, shift and call.`, href: '#/people', go: 'Open People' }) : null;
+    const outreachSc = crm ? sc({ ic: IC.news, title: 'Outreach', num: crm.due || null, note: crm.due ? `${crm.due === 1 ? 'follow-up is' : 'follow-ups are'} due for you this week. Email a list or start the phone bank.` : 'No follow-ups due for you. Email a saved list or start the phone bank.', href: crm.due ? '#/people/tasks' : '#/outreach', go: crm.due ? 'See your follow-ups' : 'Open Outreach' }) : null;
+    if (role === 'candidate') {
+      const cm = campaignNums(ctx);
+      return [
+        sc({ ic: IC.star, title: 'My Campaign', num: cm.todo || null, note: cm.todo ? 'Things need you today, including suggestions from the committee.' : 'Your campaign is caught up. See this week’s plan.', href: '#/mycampaign', go: 'Open My Campaign' }),
+        sc({ ic: IC.user, title: 'Your supporters', num: cm.people, note: 'People on your campaign’s own list. The committee’s list stays separate.', href: '#/mycampaign/people', go: 'Open your people' }),
+        sc({ ic: IC.news, title: 'Reach your supporters', num: null, note: 'Email or text your list, or call through your phone bank.', href: '#/mycampaign/outreach', go: 'Open outreach' }),
+        sc({ ic: IC.cal, title: 'Next county event', num: null, note: n.next ? `${n.next.title}, ${fmtDay(n.next.date)}${n.next.time ? ' at ' + n.next.time : ''}.` : 'No events are scheduled yet.', href: n.next ? `${site}#/events/${encodeURIComponent(n.next.id)}` : `${site}#/events`, go: 'See it on the public site', ext: true }),
+      ];
+    }
     if (role === 'board') return [
       sc({ ic: IC.plan, title: 'Plan a campaign', num: n.waiting || n.endorsed, note: n.waiting ? 'Plan items are waiting for a board member to approve them.' : `Endorsed candidates are ready for a campaign plan to Nov 3.`, href: '#/director', go: n.waiting ? 'Review the plan' : 'Draft a plan' }),
       sc({ ic: IC.walk, title: 'Build a walk list', num: n.doorsLeft, note: `Doors are left across ${(t.turfs || []).length} turfs. ${U.fmtNum(n.doorsDone)} are done.`, href: '#/field/list', go: 'Open Field Organizer' }),
       sc({ ic: IC.news, title: 'Post county news', num: n.posts || null, note: n.posts ? 'County posts are on your public site.' : 'Your public site has network news. Add a county post of your own.', href: '#/portal', go: 'Open Committee Portal' }),
+      peopleSc, outreachSc,
       sc({ ic: IC.vote, title: `Run the ${n.meeting ? n.meeting.title : 'next meeting'}`, num: n.ballots.length, note: `Open ${n.ballots.length === 1 ? 'ballot' : 'ballots'}${n.meeting ? ` for ${fmtDay(n.meeting.date)} at ${n.meeting.time}` : ''}.`, href: '#/governance', go: 'Open Meetings & Voting' }),
     ];
     if (role === 'member') return [
+      outreachSc, peopleSc,
       sc({ ic: IC.walk, title: 'Walk your list', num: n.doorsLeft, note: 'Doors are left in the county’s turfs. Record each one from your phone.', href: '#/field/canvass', go: 'Start canvassing' }),
       sc({ ic: IC.vote, title: 'Vote in the meeting', num: n.ballots.length, note: `Open ${n.ballots.length === 1 ? 'ballot' : 'ballots'}${n.meeting ? ` at the ${n.meeting.title}, ${fmtDay(n.meeting.date)}` : ''}.`, href: '#/governance/ballots', go: 'See the ballots' }),
-      sc({ ic: IC.user, title: 'Your activity', num: n.mine, note: n.mine ? 'Things you saved: RSVPs, sign-ups, votes and doors.' : 'Your RSVPs, sign-ups and votes will show up here.', href: '#/account', go: 'Open your profile' }),
+      sc({ ic: IC.user, title: 'Your activity', num: n.mine || null, note: n.mine ? 'Things you saved: RSVPs, sign-ups, votes and doors.' : 'Your RSVPs, sign-ups and votes will show up here.', href: '#/account', go: 'Open your profile' }),
       sc({ ic: IC.cal, title: 'Next county event', num: null, note: n.next ? `${n.next.title}, ${fmtDay(n.next.date)}${n.next.time ? ' at ' + n.next.time : ''}.` : 'No events are scheduled yet.', href: n.next ? `${site}#/events/${encodeURIComponent(n.next.id)}` : `${site}#/events`, go: 'See it on the public site', ext: true }),
     ];
     return [
-      sc({ ic: IC.user, title: 'Your RSVPs and sign-ups', num: n.mine, note: n.mine ? 'Everything you signed up for, in your profile.' : 'When you RSVP or volunteer, it shows up in your profile.', href: '#/account', go: 'Open your profile' }),
+      sc({ ic: IC.user, title: 'Your RSVPs and sign-ups', num: n.mine || null, note: n.mine ? 'Everything you signed up for, in your profile.' : 'When you RSVP or volunteer, it shows up in your profile.', href: '#/account', go: 'Open your profile' }),
       sc({ ic: IC.cal, title: 'Next county event', num: null, note: n.next ? `${n.next.title}, ${fmtDay(n.next.date)}${n.next.time ? ' at ' + n.next.time : ''}.` : 'No events are scheduled yet.', href: n.next ? `${site}#/events/${encodeURIComponent(n.next.id)}` : `${site}#/events`, go: 'RSVP', ext: true }),
       sc({ ic: IC.hand, title: 'Volunteer', num: n.doorsLeft, note: 'Doors are left to knock before Election Day. Pick a shift that fits.', href: `${site}#/volunteer`, go: 'Sign up to help', ext: true }),
       sc({ ic: IC.guide, title: 'Read the voter guide', num: null, note: `${t.shortName}’s recommendations for every race on your ballot.`, href: `${site}#/guide`, go: 'Open the guide', ext: true }),
@@ -353,10 +389,11 @@
           <p class="ov2-lede">${ctx.role === 'master' ? `You’re looking at ${esc(short)}. Master Network tools work for every county, and the committee switcher above moves between them.`
             : ctx.role === 'board' ? `${n.waiting ? `${n.waiting} campaign plan ${n.waiting === 1 ? 'item is' : 'items are'} waiting for a board member. ` : ''}Here’s where ${esc(short)} stands ${daysLeft()} days before Election Day.`
             : ctx.role === 'member' ? `${n.ballots.length ? `${n.ballots.length} ${n.ballots.length === 1 ? 'ballot is' : 'ballots are'} open for the ${esc(n.meeting ? n.meeting.title : 'next meeting')}. ` : ''}Here’s where ${esc(short)} stands.`
+            : ctx.role === 'candidate' ? `Your campaign home has your site, your supporters and this week’s plan. ${daysLeft()} days to Election Day.`
             : `Thanks for standing with ${esc(short)}. Here’s what’s coming up and how to help before Election Day.`}</p>
           <div class="row"><a class="btn btn-line" href="${esc(site)}">Open ${esc(short)}’s public site ${EXT}</a><button class="btn btn-quiet" data-act="tour">Take the tour</button></div>
           ${strip}</section>`;
-        const sc = shortcuts(ctx, n);
+        const sc = shortcuts(ctx, n).filter(Boolean);
         body = `<section class="ov2-sec" style="margin-top:0" data-tour="overview-shortcuts"><h2>Your shortcuts</h2><p class="ov2-sub">Picked for your ${esc(App.roleLabel(ctx.role).toLowerCase())} account, with today’s numbers.</p>
           <div class="ov2-shortcuts">${sc.map((s, i) => `<a class="ov2-sc${s.master ? ' is-master' : ''}" href="${esc(s.href)}" style="--i:${i}">
             <span class="ov2-sc-top"><span class="ov2-sc-ic">${s.ic}</span><strong>${esc(s.title)}</strong></span>

@@ -193,8 +193,10 @@
 .crm .crm-more-rows { display:flex; justify-content:center; padding:12px; border-top:1px solid var(--line); }
 .crm .crm-grid.is-x, .crm .crm-kan.is-x { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); }
 .crm .crm-grid.is-x.at-end, .crm .crm-kan.is-x.at-end { -webkit-mask-image:none; mask-image:none; }
-@media (max-width: 1179px) { .crm .col-place { display:none; } }
-@media (max-width: 1023px) { .crm .col-tags { display:none; } }
+.crm .crm-nm .pl { display:none; }
+@media (max-width: 1359px) { .crm .col-place { display:none; } .crm .crm-nm .pl { display:inline; } }
+@media (max-width: 1099px) { .crm .col-tags { display:none; } }
+.crm [data-results] { overflow:hidden; padding:1px 1px 3px; margin:-1px; }
 @media (max-width: 899px) { .crm .col-roles { display:none; } }
 
 /* chips */
@@ -568,7 +570,25 @@
   /* =====================================================================
      mountPeople
      ===================================================================== */
+  /* If a screen mounts before crm.js has loaded (a different script order, a slow phone), show the
+     skeleton and mount as soon as the engine is there. Nobody sees a loading message. */
+  function whenEngine(el, fn) {
+    if (window.App.crm && (!window.DATA ? false : true)) return false;
+    injectStyles();
+    el.classList.add('crm');
+    el.innerHTML = '<div class="page crm-page">' + skeleton(8) + '</div>';
+    let tries = 0;
+    const retry = () => {
+      if (!el.isConnected) return;
+      if (window.App.crm && window.DATA) { fn(); return; }
+      if (++tries < 300) setTimeout(retry, 100);
+    };
+    window.addEventListener('crm:ready', () => { if (el.isConnected && tries < 300) { tries = 300; fn(); } }, { once: true });
+    setTimeout(retry, 100);
+    return true;
+  }
   function mountPeople(el, ctx, opts) {
+    if (whenEngine(el, () => mountPeople(el, ctx, opts))) return { el, owner: (opts || {}).owner || 'committee' };
     injectStyles();
     const o = opts || {};
     const owner = o.owner || 'committee';
@@ -602,6 +622,7 @@
     const drawer = document.createElement('aside');
     drawer.className = 'crm crm-drawer';
     drawer.setAttribute('aria-label', 'Person profile');
+    drawer.setAttribute('data-tour', 'people-profile');
     drawer.innerHTML = '<button class="crm-rsz" type="button" aria-label="Resize profile panel. Use the left and right arrow keys."></button><div class="crm-dbar"></div><div class="crm-dbody"></div>';
     drawer.style.setProperty('--crm-dw', getDrawerW() + 'px');
     document.body.appendChild(drawer);
@@ -686,7 +707,14 @@
         box.classList.toggle('at-end', x && box.scrollLeft >= box.scrollWidth - box.clientWidth - 4);
         if (box.matches('[data-kan]')) {
           const i = Math.round(box.scrollLeft / Math.max(1, box.clientWidth));
-          page.querySelectorAll('[data-steptab]').forEach((t) => t.setAttribute('aria-selected', String(Number(t.dataset.steptab) === i)));
+          page.querySelectorAll('[data-steptab]').forEach((t) => {
+            const on = Number(t.dataset.steptab) === i;
+            if (on && t.getAttribute('aria-selected') !== 'true' && t.parentElement) {
+              const bar = t.parentElement;
+              bar.scrollTo({ left: Math.max(0, t.offsetLeft - 16), behavior: reduceMotion() ? 'auto' : 'smooth' });
+            }
+            t.setAttribute('aria-selected', String(on));
+          });
         }
       };
       box.addEventListener('scroll', upd, { passive: true });
@@ -720,7 +748,7 @@
           <div class="crm-chips" data-chips>${chipsHtml()}</div>
         </div>
         <div class="crm-sumline" data-sum></div>
-        <div data-results></div>`;
+        <div data-results data-tour="people-table"></div>`;
       renderResults(true);
       const grid = sec.querySelector('.crm-grid');
       if (grid && M.gridTop) grid.scrollTop = M.gridTop;
@@ -772,10 +800,10 @@
           </tr></thead>
           <tbody>${shown.map((p) => `<tr data-open="${esc(p.id)}" class="${M.sel.has(p.id) ? 'is-sel' : ''}${openPerson === p.id ? ' is-open' : ''}${fresh.has(p.id) ? ' is-new' : ''}">
             ${canEdit ? `<td class="cb" data-stop><label class="crm-cb"><input type="checkbox" data-sel="${esc(p.id)}"${M.sel.has(p.id) ? ' checked' : ''} aria-label="Select ${esc(p.name)}"></label></td>` : ''}
-            <td><div class="crm-nm">${U.avatar(p.name, 30)}<div class="t"><b><a href="${esc(href(p.id))}" data-open-link="${esc(p.id)}" style="color:inherit;text-decoration:none">${esc(p.name || 'No name')}</a></b>${sampleMark(p)}<small>${esc(p.email || (p.phone ? C.util.fmtPhone(p.phone) : 'No contact info'))}</small></div></div></td>
+            <td><div class="crm-nm">${U.avatar(p.name, 30)}<div class="t"><b><a href="${esc(href(p.id))}" data-open-link="${esc(p.id)}" style="color:inherit;text-decoration:none">${esc(p.name || 'No name')}</a></b>${sampleMark(p)}<small>${esc(p.email || (p.phone ? C.util.fmtPhone(p.phone) : 'No contact info'))}${p.city ? `<span class="pl"> · ${esc(p.city)}</span>` : ''}</small></div></div></td>
             <td>${supportMeter(p.support)}</td>
             <td class="col-roles">${roleChips(p.roles, 2)}</td>
-            <td class="col-tags">${tagChips(p.tags, 2, true)}</td>
+            <td class="col-tags">${tagChips(p.tags, 1, true)}</td>
             <td class="muted-cell col-place">${esc([p.city, p.zip].filter(Boolean).join(' · '))}</td>
             <td class="muted-cell"><span class="crm-last">${esc(fmtRel(p.lastActivityAt))}${p.pointPersonId ? `<span class="crm-ppa" title="Point person: ${esc(pname(p.pointPersonId))}"><span class="sr-only">Point person: ${esc(pname(p.pointPersonId))}</span>${U.avatar(pname(p.pointPersonId), 22)}</span>` : ''}</span></td>
           </tr>`).join('')}</tbody></table>
@@ -1210,7 +1238,7 @@
             <a class="btn btn-sm btn-ghost" href="${cand}">${IC.cap} Start in Campaign-in-a-Box</a></div>
           <ul>${sugg.slice(0, 12).map((x) => `<li>${U.avatar(x.person.name, 26)}<span><a href="${esc(href(x.person.id))}" data-open-link="${esc(x.person.id)}">${esc(x.person.name)}</a> <small>${x.shifts ? plural(x.shifts, 'shift') : ''}${x.shifts && x.walks ? ', ' : ''}${x.walks ? plural(x.walks, 'walk') : ''}</small></span>${canEdit ? `<button class="btn btn-sm" data-act="sugg-add" data-id="${esc(x.person.id)}">Add</button>` : ''}</li>`).join('')}</ul></section>` : ''}
         <div class="crm-steptabs" role="tablist" aria-label="Steps">${path.steps.map((s, i) => `<button type="button" role="tab" data-steptab="${i}" aria-selected="${i === 0}">${i + 1}. ${esc(s.name)}<span class="n">${active.filter((e) => e.stepId === s.id).length}</span></button>`).join('')}<button type="button" role="tab" data-steptab="${path.steps.length}" aria-selected="false">Finished<span class="n">${done.length}</span></button></div>
-        <div class="crm-kan" data-kan>${path.steps.map((s, i) => {
+        <div class="crm-kan" data-kan data-tour="people-paths">${path.steps.map((s, i) => {
           const cards = active.filter((e) => e.stepId === s.id).sort((a, b) => String(a.due).localeCompare(String(b.due)));
           return `<section class="crm-col" data-step="${esc(s.id)}" aria-label="Step ${i + 1}: ${esc(s.name)}">
             <div class="crm-col-h"><div style="flex:1;min-width:0"><div class="step">STEP ${i + 1}</div><h3>${esc(s.name)}</h3></div><span class="n">${cards.length}</span></div>
@@ -1233,7 +1261,7 @@
       return `<div class="crm-kc${freshCards.has(e.id) ? ' is-new' : ''}" data-entry="${esc(e.id)}" ${canEdit ? 'data-drag' : ''}>
         ${canEdit ? `<span class="crm-grip" aria-hidden="true">${IC.grip}</span>` : ''}
         ${U.avatar(p.name, 30)}
-        <div class="b"><b><a href="${esc(href(p.id))}" data-open-link="${esc(p.id)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></b>
+        <div class="b"><b><a href="${esc(href(p.id))}" data-open-link="${esc(p.id)}" draggable="false" style="color:inherit;text-decoration:none">${esc(p.name)}</a></b>
           <small><span class="crm-due ${d.cls}">${d.overdue ? IC.warn : IC.clock}${esc(d.label)}</span>${asg ? `<span title="Step owner: ${esc(asg.name)}">${U.avatar(asg.name, 18)}</span>` : ''}</small>
           ${last ? `<small><a class="cta" href="app.html#/candidate">${IC.cap} Start in Campaign-in-a-Box</a></small>` : ''}</div>
         ${canEdit ? `<button class="crm-ibtn" data-act="card-menu" data-id="${esc(e.id)}" aria-label="Move ${esc(p.name)}">${IC.dots}</button>` : ''}
@@ -1296,6 +1324,8 @@
       el.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
     }
     el.addEventListener('pointerup', endDrag);
+    // Links and avatars inside a card would start the browser's own drag and cancel ours.
+    el.addEventListener('dragstart', (e) => { if (e.target && e.target.closest && e.target.closest('.crm-kc')) e.preventDefault(); });
     el.addEventListener('pointercancel', () => { if (drag && drag.started) { drag.ghost.remove(); drag.card.classList.remove('dragging'); page.querySelectorAll('.crm-col.drop').forEach((c) => c.classList.remove('drop')); } drag = null; });
 
     function pathEditor(path) {
@@ -1719,7 +1749,7 @@
   /* ---------------- register ---------------- */
   App.crmUI = Object.assign(App.crmUI || {}, {
     mountPeople,
-    _kit: { embedRoute, IC, TYPE_IC, I, injectStyles, supportMeter, sampleMark, roleChips, tagChips, tagText, emptyState, ART, skeleton, fmtRel, fmtDate, dueInfo, plural, openMenu, closeMenus, filterSummary, confirmModal, reduceMotion, isPhone },
+    _kit: { whenEngine, embedRoute, IC, TYPE_IC, I, injectStyles, supportMeter, sampleMark, roleChips, tagChips, tagText, emptyState, ART, skeleton, fmtRel, fmtDate, dueInfo, plural, openMenu, closeMenus, filterSummary, confirmModal, reduceMotion, isPhone },
   });
 
   App.register({

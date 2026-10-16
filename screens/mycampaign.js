@@ -28,20 +28,16 @@
 .scr-mc .mc-hero h1 { color: #fff; margin: 0 0 4px; font-size: clamp(1.7rem, 1.2rem + 2vw, 2.4rem); }
 .scr-mc .mc-eyebrow { margin: 0; font: 700 12.5px/1.3 var(--font-body); letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
 .scr-mc .mc-sub { margin: 0; opacity: .92; font-size: 15px; }
-.scr-mc .mc-days { margin-left: auto; text-align: right; flex: none; }
-.scr-mc .mc-days b { display: block; font: 800 2.8rem/1 var(--font-head); font-stretch: 75%; }
-.scr-mc .mc-days span { font-size: 13px; opacity: .9; }
-@media (max-width: 640px) { .scr-mc .mc-hero { flex-wrap: wrap; padding: 18px; } .scr-mc .mc-days { margin-left: 0; text-align: left; flex-basis: 100%; display: flex; align-items: baseline; gap: 8px; } .scr-mc .mc-days b { display: inline; font-size: 2.2rem; } }
+.scr-mc .mc-hero::after { pointer-events: none; }
+@media (max-width: 640px) { .scr-mc .mc-hero { padding: 18px; } }
 .scr-mc .mc-support { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 14px; padding: 10px 14px; border-radius: var(--r); background: var(--info-soft); color: #173E66; font-size: 14.5px; }
-.scr-mc .mc-week { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 18px; }
-.scr-mc .mc-cell { padding: 16px 18px; min-width: 0; border-left: 1px solid var(--line); text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 3px; transition: background-color .15s; }
-.scr-mc .mc-cell:first-child { border-left: 0; }
-.scr-mc a.mc-cell:hover { background: var(--surface-2); color: inherit; }
-.scr-mc .mc-cell b { font: 800 1.9rem/1.05 var(--font-head); font-stretch: 80%; color: var(--ink); font-variant-numeric: tabular-nums; }
-.scr-mc .mc-cell .l { font-size: 13.5px; color: var(--ink-2); font-weight: 600; }
-.scr-mc .mc-cell .s { font-size: 12.5px; color: var(--ink-3); }
-.scr-mc .mc-cell .cb-bar { margin: 6px 0 0; }
-@media (max-width: 760px) { .scr-mc .mc-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } .scr-mc .mc-cell:nth-child(3) { border-left: 0; } .scr-mc .mc-cell:nth-child(n+3) { border-top: 1px solid var(--line); } }
+.scr-mc .mc-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: 12px 16px; margin-bottom: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); font-size: 14.5px; color: var(--ink-2); }
+.scr-mc .mc-line-site { text-decoration: none; }
+.scr-mc .mc-line-money { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 12px; }
+.scr-mc .mc-line-money > span { white-space: nowrap; }
+.scr-mc .mc-line-money b, .scr-mc .mc-line-days b { font: 800 1.15rem/1 var(--font-head); color: var(--ink); font-variant-numeric: tabular-nums; }
+.scr-mc .mc-line-money .cb-bar { flex: 1; min-width: 80px; margin: 0; }
+@media (max-width: 640px) { .scr-mc .mc-line-money { flex-basis: 100%; flex-wrap: wrap; gap: 6px; } .scr-mc .mc-line-money .cb-bar { flex-basis: 100%; } }
 .scr-mc .mc-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 1000px) { .scr-mc .mc-grid { grid-template-columns: minmax(0, 1fr); } }
 .scr-mc .mc-notice { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r); background: var(--warn-soft); color: #5C3A00; margin-bottom: 16px; font-size: 14.5px; }
@@ -108,7 +104,7 @@
     const site = K.siteOf(c) || {};
     const st = K.siteState(c, K.siteOf(c));
     const vols = Store.list('volunteers').filter((v) => v.campaign === d.slug);
-    const weekVols = vols.filter((v) => new Date(v.createdAt).getTime() >= weekAgo());
+    const weekVols = vols.filter((v) => new Date(v.createdAt).getTime() >= weekAgo()).length;
     const saved = Store.list('donations').filter((x) => x.campaign === d.slug).reduce((s, x) => s + (Number(x.amount) || 0), 0);
     const raised = (c.raisedUsd || 0) + saved;
     const goal = c.goalUsd || 0;
@@ -129,11 +125,10 @@
 
     root.insertAdjacentHTML('beforeend', `
       ${site.endorsementPaused ? `<div class="mc-notice" role="status">${K.IC.warn}<span><b>The committee paused ${you ? 'your' : 'this'} endorsement.</b> The endorsement badge is hidden on ${you ? 'your' : 'the'} site for now. Reason given: “${esc((site.endorsementPause || {}).reason || '')}”</span></div>` : ''}
-      <div class="mc-week">
-        <a class="mc-cell" href="#/mycampaign/site"><span class="l">${you ? 'Your site' : 'Site'}</span><b>${esc(st.key === 'live' ? 'Live' : st.key === 'review' ? 'In review' : st.key === 'hold' ? 'On hold' : 'Draft')}</b><span class="s">${st.key === 'live' ? 'Public now' : 'Private until published'}</span></a>
-        <a class="mc-cell" href="#/mycampaign/people"><span class="l">Volunteers this week</span><b>${weekVols.length}</b><span class="s">${vols.length} from ${you ? 'your' : 'the'} site in all</span></a>
-        <div class="mc-cell"><span class="l">Raised</span><b>${U.fmtUsd(raised)}</b><div class="cb-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${pct}% of goal"><span style="width:${pct}%"></span></div><span class="s">${pct}% of ${U.fmtUsd(goal)}</span></div>
-        <div class="mc-cell"><span class="l">Waiting on ${you ? 'you' : 'the campaign'}</span><b>${todo.reduce((s, t) => s + t[0], 0)}</b><span class="s">${todo.length ? `${todo.length} ${todo.length === 1 ? 'area' : 'areas'}` : 'All caught up'}</span></div>
+      <div class="mc-line" role="group" aria-label="Campaign at a glance">
+        <a class="mc-line-site" href="#/mycampaign/site"><span class="badge ${esc(st.cls)}">${esc(st.key === 'live' ? 'Site live' : st.key === 'review' ? 'Site in review' : st.key === 'hold' ? 'Site on hold' : 'Site draft')}</span></a>
+        <div class="mc-line-money"><span><b>${U.fmtUsd(raised)}</b> raised of ${U.fmtUsd(goal)}</span><div class="cb-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${pct}% of goal"><span style="width:${pct}%"></span></div></div>
+        <span class="mc-line-days"><b>${Math.max(0, K.daysUntil(d.electionDate))}</b> days to Election Day</span>
       </div>
       <div class="mc-grid">
         <div class="stack">
@@ -141,10 +136,10 @@
             ${todo.length ? `<ul class="mc-todo">${todo.map(([n, t, sub, href]) => `<li><span class="n">${n}</span><span class="t">${esc(t)}${sub ? `<small>${esc(sub)}</small>` : ''}</span><a class="btn btn-sm" href="${href}">Open</a></li>`).join('')}</ul>`
               : `<p class="muted" style="margin:0">${you ? 'You’re caught up.' : 'The campaign is caught up.'} New volunteers and committee suggestions show up here.</p>`}
           </div></div>
-          ${sugs.length ? `<div class="card" id="mc-suggestions"><div class="card-head"><h3>Committee suggestions</h3><span class="badge badge-warn">${sugs.length}</span></div><div class="card-body" data-sugs>${suggestionCards(ctx, S, d)}</div></div>` : ''}
+          ${sugs.length ? `<div class="card" id="mc-suggestions" data-tour="mycampaign-suggestions"><div class="card-head"><h3>Committee suggestions</h3><span class="badge badge-warn">${sugs.length}</span></div><div class="card-body" data-sugs>${suggestionCards(ctx, S, d)}</div></div>` : ''}
         </div>
         <div class="stack">
-          <div class="card"><div class="card-head"><h3>New volunteers</h3><span class="badge">${vols.length}</span></div><div class="card-body">
+          <div class="card"><div class="card-head"><h3>New volunteers</h3><span class="badge">${weekVols} this week</span></div><div class="card-body">
             ${vRecent.length ? `<ul class="cb-vlist">${vRecent.map((v) => `<li><b>${esc(v.name)}</b><br><span class="small muted">${esc((v.interests || []).join(', ') || 'Any task')} · ${esc(K.fmtStamp(v.createdAt))}</span></li>`).join('')}</ul>`
               : `<p class="muted" style="margin:0">No sign-ups yet. Share ${you ? 'your' : 'the'} site link and they show here.</p>`}
             <div class="row" style="margin-top:12px"><a class="btn btn-sm" href="${esc(d.url)}" target="_blank" rel="noopener">${K.IC.out} Open ${you ? 'your' : 'the'} site</a><button type="button" class="btn btn-ghost btn-sm" data-copylink>${K.IC.copy} Copy link</button></div>
@@ -224,10 +219,6 @@
   }
 
   /* ---------- team ---------- */
-  function newToken() {
-    try { const b = new Uint8Array(16); crypto.getRandomValues(b); return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(''); }
-    catch (e) { return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2); }
-  }
   function renderTeam(root, ctx, S, d) {
     const K = App.campaignKit;
     const own = K.ownerInfo(ctx, S.c);
@@ -241,7 +232,7 @@
           ${people.length ? `<ul class="cb-vlist">${people.map((a) => `<li><b>${esc(a.name)}${a.id === me.id ? ' (you)' : ''}</b> · ${a.campaignRole === 'staff' ? 'Staff' : 'Owner'}<br><span class="small muted">${esc(a.email || '')}</span>
             ${S.owner && a.campaignRole === 'staff' ? `<div class="row" style="margin-top:6px"><button type="button" class="btn btn-ghost btn-sm" data-rmstaff="${esc(a.id)}">Remove from the campaign</button></div>` : ''}</li>`).join('')}</ul>`
             : '<p class="muted" style="margin:0">No one has accepted an invite yet.</p>'}
-          ${inv.length ? `<h4 class="cb-mt">Staff invites</h4><ul class="cb-vlist">${inv.map((i) => { const b = badge[i.status] || ['', i.status]; return `<li><span class="badge ${b[0]}">${b[1]}</span> ${esc(i.email)}${S.owner && i.status === 'sent' ? `<div class="row" style="margin-top:6px"><button type="button" class="btn btn-sm" data-copyinv="${esc(i.id)}">${K.IC.copy} Copy invite link</button><button type="button" class="btn btn-ghost btn-sm" data-revinv="${esc(i.id)}">Revoke</button></div>` : ''}</li>`; }).join('')}</ul>` : ''}
+          ${inv.length ? `<h4 class="cb-mt">Staff invites</h4><ul class="cb-vlist">${inv.map((i) => { const b = badge[i.status] || ['', i.status]; return `<li><span class="badge ${b[0]}">${b[1]}</span> ${esc(i.email)}${S.owner && i.status === 'sent' ? `<div class="row" style="margin-top:6px"><button type="button" class="btn btn-sm" data-copyinv="${esc(i.id)}">${K.IC.copy} Copy invite link</button><button type="button" class="btn btn-sm" data-resendinv="${esc(i.id)}">Resend</button><button type="button" class="btn btn-ghost btn-sm" data-revinv="${esc(i.id)}">Revoke</button></div>` : ''}</li>`; }).join('')}</ul>` : ''}
         </div></div>
         <div class="card"><div class="card-head"><h3>Invite staff</h3></div><div class="card-body">
           ${S.owner ? `<p class="muted" style="margin-top:0">Staff can edit your site, print pieces, posts and people. Only you can invite or remove staff.</p>
@@ -263,31 +254,29 @@
       const err = (V.email ? V.email(email) : '') || (V.phone ? V.phone(phone) : '');
       form.querySelector('[data-stafferr]').textContent = err;
       if (err) return;
-      const payload = { email, phone, role: 'candidate', candidateId: S.c.id, campaignSlug: d.slug, campaignRole: 'staff' };
-      let r = App.auth && App.auth.createInvite ? App.auth.createInvite(payload) : null;
-      if (!r || !r.ok) {
-        /* createInvite is board-only today; campaign owners write the same invite shape. */
-        if (r && r.field) { form.querySelector('[data-stafferr]').textContent = r.error; return; }
-        Store.list('invites').forEach((i) => { if (i.status === 'sent' && i.campaignSlug === d.slug && String(i.email).toLowerCase() === email.toLowerCase()) Store.update('invites', i.id, { status: 'revoked', revokedAt: new Date().toISOString() }); });
-        const inv = Store.add('invites', Object.assign({}, payload, { email: email.toLowerCase(), phone: phone.replace(/\D/g, '').slice(-10), invitedBy: me.id || null, status: 'sent', token: newToken(), tenant: ctx.tenantSlug }));
-        const url = K.inviteLink(inv);
-        ctx.toast('', 'ok', { duration: 30000, html: `<span class="toast-code-line">Invite ready for ${esc(email)}. Email delivery is not connected yet, so send them this link.</span><span class="toast-link">${esc(url)}</span>` });
-      }
+      const r = App.auth.createInvite({ email, phone, role: 'candidate', candidateId: S.c.id, campaignSlug: d.slug, campaignRole: 'staff' });
+      if (!r || !r.ok) { form.querySelector('[data-stafferr]').textContent = (r && r.error) || 'The invite didn’t send. Try again.'; return; }
       App.rerender();
     });
     root.addEventListener('click', (e) => {
       const cp = e.target.closest('[data-copyinv]');
       if (cp) { const i = own.invites.find((x) => x.id === cp.dataset.copyinv); if (i) K.copyText(K.inviteLink(i), 'Invite link copied.'); return; }
+      const rs = e.target.closest('[data-resendinv]');
+      if (rs) { const r = App.auth.resendInvite(rs.dataset.resendinv); if (!r || !r.ok) ctx.toast((r && r.error) || 'The invite could not be resent.', 'warn'); return; }
       const rv = e.target.closest('[data-revinv]');
-      if (rv) { Store.update('invites', rv.dataset.revinv, { status: 'revoked', revokedAt: new Date().toISOString() }); ctx.toast('Invite revoked. The link no longer works.', 'info'); App.rerender(); return; }
+      if (rv) {
+        const r = App.auth.revokeInvite(rv.dataset.revinv);
+        if (!r || !r.ok) { ctx.toast((r && r.error) || 'The invite could not be revoked.', 'warn'); return; }
+        ctx.toast('Invite revoked. The link no longer works.', 'info'); App.rerender(); return;
+      }
       const rm = e.target.closest('[data-rmstaff]');
       if (rm) {
         const a = people.find((x) => x.id === rm.dataset.rmstaff);
         if (!a) return;
         ctx.modal({ title: `Remove ${a.name}?`, html: `<p>${esc(a.name)} loses access to your campaign right away. Their account stays, as a supporter account.</p>`,
           actions: [{ label: 'Keep' }, { label: 'Remove', primary: true, onClick: () => {
-            if (App.auth && typeof App.auth.removeCampaignMember === 'function') App.auth.removeCampaignMember(a.id);
-            else Store.global.update('accounts', a.id, { role: 'supporter', candidateId: null, campaignSlug: null, campaignRole: null });
+            const r = App.auth.removeCampaignMember(a.id);
+            if (!r || !r.ok) { ctx.toast((r && r.error) || 'That person could not be removed.', 'warn'); return; }
             ctx.toast(`${a.name} no longer has access to your campaign.`, 'info'); App.rerender();
           } }] });
       }
@@ -325,19 +314,17 @@
       }
       const d = K.view(S.c, ctx);
       const st = K.siteState(S.c, K.siteOf(S.c));
-      const days = K.daysUntil(d.electionDate);
       root.style.setProperty('--mc-b', d.colors.brand);
       root.style.setProperty('--mc-a', d.colors.accent);
       const first = K.firstName(S.c.name);
       root.innerHTML = `
         ${S.self ? '' : `<div class="mc-support"><span>You’re supporting this campaign ${ctx.role === 'master' ? 'for Master Network' : 'as a board member'}. Committee edits go to the candidate as suggestions.</span><span class="spacer"></span>
           <label class="cb-picker"><span>Campaign</span><select class="select" data-mcpick aria-label="Campaign">${S.list.map((x) => `<option value="${esc(x.id)}"${x.id === S.c.id ? ' selected' : ''}>${esc(x.name)}, ${esc(x.office)}</option>`).join('')}</select></label></div>`}
-        <header class="mc-hero">
+        <header class="mc-hero" data-tour="mycampaign-overview">
           ${K.photoTag(d, 72)}
           <div style="min-width:0"><p class="mc-eyebrow">${esc(d.office)} · ${esc(d.district)}</p>
             <h1>${S.self ? `Hi, ${esc(first)}` : esc(S.c.name)}</h1>
             <p class="mc-sub">${S.self ? (st.key === 'live' ? 'Your site is live.' : 'Your site is private until you publish it.') : `${esc(first)}’s site is ${st.key === 'live' ? 'live' : 'not public yet'}.`}${S.self && S.role === 'staff' ? ' You’re on the campaign staff.' : ''}</p></div>
-          <div class="mc-days"><b>${days > 0 ? days : 0}</b><span>${days === 1 ? 'day' : 'days'} to Election Day</span></div>
         </header>
         <nav class="tabs cb-tabs" aria-label="My Campaign sections">
           ${SUBS.map(([id, label]) => `<a class="tab${id === sub ? ' active' : ''}" href="#/mycampaign${id ? '/' + id : ''}"${id === sub ? ' aria-current="page"' : ''}>${esc(S.self || id !== 'site' ? label : 'Site')}</a>`).join('')}

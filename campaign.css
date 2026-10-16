@@ -114,6 +114,17 @@ html { scroll-behavior: smooth; scroll-padding-top: 76px; }
 .cs-issue-n { font: 800 2rem/1 var(--font-head); font-stretch: 75%; color: var(--ca); flex: none; min-width: 2.2ch; }
 .cs-issue p { margin: 2px 0 0; font-weight: 650; font-size: 1.12rem; line-height: 1.4; color: var(--ink); }
 
+/* ---------- events ---------- */
+.cs-events { padding-top: 12px; }
+.cs-evlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.cs-ev { display: flex; gap: 16px; align-items: center; padding: 14px 16px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--cb) 14%, transparent); background: #fff; }
+.cs-ev-date { width: 60px; flex: none; text-align: center; border-radius: 12px; background: var(--cb); color: #fff; padding: 8px 0; line-height: 1.05; }
+.cs-ev-date small { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .9; }
+.cs-ev-date b { display: block; font: 800 1.6rem/1 var(--font-head); }
+.cs-ev-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 15px; color: var(--ink-2); overflow-wrap: anywhere; }
+.cs-ev-txt b { font-size: 1.08rem; color: var(--ink); }
+@media (min-width: 640px) { .cs-evlist { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* ---------- volunteer ---------- */
 .cs-vol { max-width: none; background: linear-gradient(180deg, color-mix(in srgb, var(--cb) 6%, #fff), #fff); border-top: 1px solid color-mix(in srgb, var(--cb) 10%, transparent); }
 .cs-vol > * { max-width: calc(var(--cs-max) - 40px); margin-left: auto; margin-right: auto; }

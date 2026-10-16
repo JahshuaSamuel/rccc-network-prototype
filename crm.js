@@ -1357,9 +1357,16 @@
   }
 
   // Ingest on load, once the app has booted and DATA is in.
+  /* Readiness: App.crm.ready resolves (and a 'crm:ready' window event fires) once DATA is in and the seed has run. */
+  let readyResolve;
+  const ready = new Promise((r) => { readyResolve = r; });
+  let isReady = false;
   function boot() {
     if (!window.DATA) { setTimeout(boot, 200); return; }
     try { ensure(); } catch (e) { console.error('[crm] boot', e); }
+    isReady = true;
+    readyResolve(App.crm);
+    try { window.dispatchEvent(new CustomEvent('crm:ready')); } catch (e) { /* ignore */ }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 0));
   else setTimeout(boot, 0);
@@ -1378,7 +1385,7 @@
     callCampaigns, getCallCampaign, saveCallCampaign, callQueue, callProgress, callsFor, logCall,
     petitions, getPetition, savePetition, signatures, petitionCount, petitionUrl,
     share, shares: (slug) => list('shares', slug).slice().sort((a, b) => String(b.at).localeCompare(String(a.at))), campaignOwners,
-    ingest, seed, ensure, stats,
+    ingest, seed, ensure, stats, ready, get isReady() { return isReady; },
     config, setConfig, perms, ownerLabel, ownerSlug, isCampaign, candidateFor, countyName,
     csv, csvCell, peopleCsv, download,
     util: { normEmail, normPhone, fmtPhone, kebab, splitName, isoDay, fmtWhen, fmtTime, daysSince },
