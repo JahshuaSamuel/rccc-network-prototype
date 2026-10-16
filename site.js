@@ -883,7 +883,9 @@
       H.reveal(view);
       if (!o.live) {
         if (!o.keepScroll) window.scrollTo(0, 0);
-        if (!REDUCED()) { view.classList.add('is-entering'); requestAnimationFrame(() => requestAnimationFrame(() => view.classList.remove('is-entering'))); }
+        /* Animate only page-to-page moves, never the first paint. A CSS animation runs without
+           waiting on requestAnimationFrame, so a throttled tab can't leave the page invisible. */
+        if (!REDUCED() && prevName) view.classList.add('is-entering');
         if (o.focus !== false && prevName) {
           const h1 = view.querySelector('h1');
           if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }

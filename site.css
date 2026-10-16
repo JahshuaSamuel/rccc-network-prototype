@@ -159,7 +159,8 @@ body.s-body { background: var(--s-paper); color: var(--s-ink); font-size: 16.5px
 
 /* ---------- page transitions & reveal ---------- */
 .s-view { transition: opacity .22s ease, transform .3s var(--s-ease); }
-.s-view.is-entering { opacity: 0; transform: translateY(10px); }
+.s-view.is-entering { animation: s-view-in .3s var(--s-ease) both; }
+@keyframes s-view-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .s-view.is-leaving { opacity: 0; transform: translateY(-6px); transition-duration: .13s; }
 .s-reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .6s var(--s-ease); }
 .s-reveal.is-in { opacity: 1; transform: none; }
