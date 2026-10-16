@@ -3,79 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>RCCC Network Prototype</title>
-  <meta name="description" content="Clickable stakeholder prototype of one shared platform for every Republican County Central Committee. Sample data only.">
-  <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+  <title>SVGOP · Santa Clara County Republican Party</title>
+  <meta name="description" content="Santa Clara County Republican Party: the voter guide, local news, events, endorsed candidates and ways to volunteer, join or donate.">
+  <meta name="theme-color" content="#0B2A4A">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Santa Clara County Republican Party">
+  <meta property="og:title" content="SVGOP · Santa Clara County Republican Party">
+  <meta property="og:description" content="Santa Clara County Republican Party: the voter guide, local news, events, endorsed candidates and ways to volunteer, join or donate.">
+  <meta property="og:url" content="https://svgop.com/">
+  <meta property="og:image" content="images/voter-guide/svgop-2026-guide-cards.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B2A4A'/%3E%3Cpath d='M16 5.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L16 21.6l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z' fill='%23C8102E'/%3E%3C/svg%3E">
+  <script>
+    /* Set county colors and OG text before first paint (no flash of the wrong county). */
+    (function () {
+      var c = new URLSearchParams(location.search).get('county');
+      var map = { svgop: ['#0B2A4A', '#C8102E', 'SVGOP', 'Santa Clara County Republican Party', 'svgop.com'], demo: ['#14532D', '#B7791F', 'Demo County GOP', 'Demo County Republican Party', 'democountygop.org'] };
+      var t = map[c] || map.svgop;
+      var r = document.documentElement.style;
+      r.setProperty('--brand', t[0]); r.setProperty('--accent', t[1]); r.setProperty('--brand-ink', '#FFFFFF');
+      document.title = t[2] + ' · ' + t[3];
+      if (new URLSearchParams(location.search).get('zones') === '1') document.documentElement.className += ' s-zones-on';
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..100,500..900&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="site.css">
 </head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
+<body class="s-body">
+  <a class="s-skip" href="#main">Skip to content</a>
+  <div id="s-alert"></div>
+  <div id="s-header"></div>
+  <main id="main" class="s-main" tabindex="-1">
+    <div class="s-boot" aria-hidden="true"><span></span></div>
+  </main>
+  <div id="s-footer"></div>
+  <div id="s-menu" class="s-menu" aria-hidden="true" hidden></div>
+  <div id="toasts" role="region" aria-label="Notifications" aria-live="polite" aria-relevant="additions"></div>
+  <noscript><p class="s-wrap">This site needs JavaScript to show news, events and the voter guide.</p></noscript>
 
-  <header class="topbar" id="topbar">
-    <button class="menu-btn" id="menu-btn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
-    </button>
-
-    <a class="wordmark" href="#/overview" aria-label="Home">
-      <svg class="wordmark-star" width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
-        <rect width="32" height="32" rx="7" fill="var(--brand-ink)"/>
-        <path d="M16 5.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L16 21.6l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z" fill="var(--accent)"/>
-      </svg>
-      <span class="wordmark-text">
-        <span class="wordmark-name" id="wordmark-name">SVGOP</span>
-        <span class="wordmark-sub" id="wordmark-sub">Santa Clara County</span>
-      </span>
-    </a>
-
-    <span class="proto-pill" title="Everything here is invented sample data">Prototype · sample data</span>
-
-    <div class="spacer"></div>
-
-    <div class="topbar-controls">
-      <label class="switcher" data-tour="tenant-switcher">
-        <span class="switcher-label">Committee</span>
-        <select id="tenant-select" class="switcher-select" aria-label="Switch committee"></select>
-      </label>
-      <label class="switcher" data-tour="role-switcher">
-        <span class="switcher-label">Viewing as</span>
-        <select id="role-select" class="switcher-select" aria-label="Switch role"></select>
-      </label>
-      <button class="btn btn-tour" id="start-tour" data-tour="start-tour">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M8.3 7l4.4 3-4.4 3z" fill="currentColor"/></svg>
-        <span>Start guided tour</span>
-      </button>
-    </div>
-  </header>
-
-  <div class="shell">
-    <nav class="sidebar" id="sidebar" data-tour="nav" aria-label="Main">
-      <div id="nav-list"></div>
-      <div class="sidebar-foot small">One platform, many committees. Each county runs its own site.</div>
-    </nav>
-    <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
-    <main class="main" id="main" tabindex="-1"></main>
-  </div>
-
-  <div id="toasts" aria-live="polite"></div>
-
-  <!-- Script order per contract. A missing file 404s and simply registers nothing. -->
   <script src="data.js"></script>
-  <script src="core.js"></script>
+  <script src="store.js"></script>
+  <script src="newsroom-data.js"></script>
+  <script src="site.js"></script>
   <script src="voter-guide-data.js"></script>
   <script src="voter-guide.js"></script>
-  <script src="screens/overview.js"></script>
-  <script src="screens/public-hub.js"></script>
-  <script src="screens/master.js"></script>
-  <script src="screens/portal.js"></script>
-  <script src="screens/candidate.js"></script>
-  <script src="screens/field.js"></script>
-  <script src="screens/governance.js"></script>
-  <script src="screens/director.js"></script>
-  <script src="newsroom-data.js"></script>
-  <script src="screens/newsroom.js"></script>
-  <script src="tour.js"></script>
-
-</body></html>
+  <script src="site-pages.js"></script>
+  <script src="site-newsroom.js"></script>
+  <script src="site-act.js"></script>
+</body>
+</html>

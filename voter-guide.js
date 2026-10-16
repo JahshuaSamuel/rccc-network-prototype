@@ -57,6 +57,7 @@
 .vg-person-office { display:block; font:700 11.5px/1.2 var(--font-body); text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.75); }
 .vg-person-name { display:block; font:800 1.06rem/1.15 var(--font-head); font-stretch:88%; color:#fff; }
 
+.vg-t-break { margin:-6px 0 0; font-size:14px; font-weight:600; color:rgba(255,255,255,.78); }
 .vg-t-props-label { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; margin-bottom:8px;
   font:800 12.5px/1.2 var(--font-body); letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.8); }
 .vg-t-props-label span { text-transform:none; letter-spacing:0; font-weight:600; font-size:13px; color:rgba(255,255,255,.72); }
@@ -178,6 +179,29 @@ body.vg-open { overflow:hidden; }
 .vg-paid { display:inline-block; border:1.5px solid var(--ink-3); padding:6px 10px; font-size:13px; font-weight:600; color:var(--ink-2); max-width:62ch; }
 .vg-source { font-size:14px; font-weight:600; color:var(--brand); display:inline-flex; align-items:center; gap:6px; }
 
+
+/* ---------- full-page guide (public site #/guide) ---------- */
+.vg-page { padding:0 0 48px; }
+.vg-sheet.vg-sheet-page { width:100%; max-width:none; border-radius:0; box-shadow:none; overflow:visible; transform:none; background:transparent; display:block; }
+.vg-sheet-page .vg-head { padding:40px max(16px, calc((100% - 1240px) / 2 + 32px)) 0; }
+.vg-sheet-page .vg-head h1 { margin:8px 0 6px; color:#fff; font-family:var(--font-head); font-stretch:76%; font-weight:800; font-size:clamp(2.2rem, 1.4rem + 3.4vw, 4.2rem); line-height:.96; letter-spacing:-.01em; }
+.vg-sheet-page .vg-body { overflow:visible; max-width:1240px; margin:0 auto; }
+.vg-sheet-page .vg-search-row { top:var(--s-header-h, 0px); padding-left:32px; padding-right:32px; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); }
+.vg-sheet-page .vg-panel { padding-left:32px; padding-right:32px; }
+.vg-sheet-page .vg-foot { margin:12px 32px 0; border:1px solid var(--line); border-radius:14px; }
+.vg-btn-solid { color:var(--brand-ink); }
+@media (max-width: 760px) {
+  .vg-sheet-page .vg-head { padding:24px 16px 0; }
+  .vg-sheet-page .vg-head .vg-eyebrow { display:inline-flex; }
+  .vg-sheet-page .vg-search-row, .vg-sheet-page .vg-panel { padding-left:16px; padding-right:16px; }
+  .vg-sheet-page .vg-foot { margin:12px 16px 0; }
+}
+@media print {
+  body.vg-printing .s-util, body.vg-printing #s-alert, body.vg-printing #s-header, body.vg-printing #s-footer, body.vg-printing .s-zone-tag { display:none !important; }
+  .vg-sheet-page .vg-head-actions, .vg-sheet-page .vg-tabs, .vg-sheet-page .vg-search-row, .vg-sheet-page .vg-panel[data-panel="card"] { display:none !important; }
+  .vg-sheet-page .vg-panel[hidden] { display:block !important; }
+  .vg-sheet-page .vg-head { padding:18px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
 @media (max-width: 760px) {
   .vg-overlay { padding:0; }
   .vg-sheet { border-radius:0; }
@@ -254,6 +278,14 @@ body.vg-open { overflow:hidden; }
     return null;
   }
 
+  /* "23 endorsed candidates: 7 statewide, 4 U.S. House, …" */
+  function breakdown(g) {
+    const n = races(g).length;
+    const parts = g.groups.map((x) => `${x.races.length} ${x.label === 'Statewide' ? 'statewide' : x.label === 'Schools & City' ? 'schools and city' : x.label === 'State Legislature' ? 'legislature' : x.label}`);
+    if (parts.length === 1) return `${n} endorsed candidates, all ${g.groups[0].label === 'Statewide' ? 'statewide' : g.groups[0].label}.`;
+    return `${n} endorsed candidates: ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`;
+  }
+
   /* ---------------- homepage teaser ---------------- */
   function teaser(t) {
     const g = get(t);
@@ -273,15 +305,16 @@ body.vg-open { overflow:hidden; }
         </div>
         ${cd ? `<div class="vg-count${cd.today ? ' is-today' : ''}"><b>${cd.n}</b><span>${cd.label}</span></div>` : ''}
       </div>
-      <p class="vg-t-lede">Every candidate we endorse and how to vote on all ${g.measures.length} measures, on one page. ${daysLeft(g) >= 0 ? `Vote by ${esc(longDate(g))}.` : ''}</p>
+      <p class="vg-t-lede">See every candidate we endorse and how to vote on all ${g.measures.length} measures, on one page. ${daysLeft(g) >= 0 ? `Vote by ${esc(longDate(g))}.` : ''}</p>
       ${top.length ? `<div class="vg-t-ticket">${top.map((r) => `<button class="vg-person" data-vg="open" data-vg-tab="candidates" data-vg-focus="${esc(r.name)}">
           ${photo(r, 44)}<span style="min-width:0"><span class="vg-person-office">${esc(r.office)}</span><span class="vg-person-name">${esc(r.name)}</span></span></button>`).join('')}</div>` : ''}
+      <p class="vg-t-break">${esc(breakdown(g))}</p>
       <div class="vg-t-props">
         <div class="vg-t-props-label">Measures at a glance <span>YES on ${yn.yes.length} · NO on ${yn.no.length}</span></div>
         <div class="vg-pills">${pills}</div>
       </div>
       <div class="vg-t-actions">
-        <button class="vg-btn vg-btn-primary" data-vg="open">Open the full guide ${IC_ARROW}</button>
+        ${App.site ? `<a class="vg-btn vg-btn-primary" href="#/guide">Open the full guide ${IC_ARROW}</a>` : `<button class="vg-btn vg-btn-primary" data-vg="open">Open the full guide ${IC_ARROW}</button>`}
         <button class="vg-btn vg-btn-ghost" data-vg="print">${IC_PRINT} Print or save</button>
       </div>
     </section>`;
@@ -299,31 +332,25 @@ body.vg-open { overflow:hidden; }
     return `<div class="vg-bar" role="region" aria-label="Voter guide">
       <span class="vg-bar-tag">${STAR(13)} VOTER GUIDE</span>
       <span class="vg-bar-text"><b>${lead}</b> ${esc(t.shortName)} says <span class="vg-bar-yes">YES on ${yes}</span> · <span class="vg-bar-no">NO on the other ${yn.no.length}</span> · ${races(g).length} endorsed candidates</span>
-      <button class="vg-btn vg-btn-primary" data-vg="open">Open the guide ${IC_ARROW}</button>
+      ${App.site ? `<a class="vg-btn vg-btn-primary" href="#/guide">Open the guide ${IC_ARROW}</a>` : `<button class="vg-btn vg-btn-primary" data-vg="open">Open the guide ${IC_ARROW}</button>`}
     </div>`;
   }
 
-  /* ---------------- full-screen guide ---------------- */
+
+  /* ---------------- the guide itself: overlay (quick open) or full page (#/guide on the public site) ---------------- */
   let openApi = null;
 
-  function open(t, opts) {
-    t = t || App.ctx.tenant;
-    const g = get(t);
-    if (!g) { App.toast(`${t.shortName}’s voter guide is published after the committee’s endorsement vote.`, 'info'); return; }
-    injectStyle();
-    if (openApi) openApi.close(true);
-    opts = opts || {};
-    const prevFocus = document.activeElement;
+  function publicUrl(t) {
+    try { return new URL(`index.html?county=${encodeURIComponent(t.slug)}#/guide`, location.href).href; }
+    catch (e) { return `index.html?county=${t.slug}#/guide`; }
+  }
+
+  /* Markup for the head, tabs and panels. mode: 'overlay' | 'page'. */
+  function guideHtml(t, g, mode) {
     const all = races(g);
     const cd = daysLeft(g);
     const yn = yesNo(g);
-    const tabs = [
-      { id: 'candidates', label: 'Candidates', n: all.length },
-      { id: 'measures', label: 'Measures', n: g.measures.length },
-    ];
-    if (g.printImage) tabs.push({ id: 'card', label: 'Printed card' });
-    let tab = tabs.some((x) => x.id === opts.tab) ? opts.tab : 'candidates';
-
+    const tabs = guideTabs(g);
     const groupsHtml = g.groups.map((grp) => `<section class="vg-group" data-group="${esc(grp.id)}">
         <div class="vg-group-head"><h3>${esc(grp.label)}</h3><span>${grp.scope === 'state' ? 'Same on every California ballot' : `${esc(countyName(t))} races`}</span></div>
         <div class="vg-cards">${grp.races.map((r) => `<div class="vg-card" data-q="${esc((r.office + ' ' + r.name).toLowerCase())}" data-key="${esc(slug(r.name))}">
@@ -346,25 +373,23 @@ body.vg-open { overflow:hidden; }
     const cardHtml = g.printImage ? `<div class="vg-print-card">
         <img src="${esc(g.printImage)}" alt="${esc(t.shortName)} ${esc(g.election)} printed voter guide: endorsed candidates and measure recommendations" loading="lazy">
         <div class="row">
-          <a class="btn btn-primary" href="${esc(g.printImage)}" download>Download the card</a>
+          <a class="btn btn-primary vg-btn-solid" href="${esc(g.printImage)}" download>Download the card</a>
           ${g.sheetImage ? `<a class="btn btn-ghost" href="${esc(g.sheetImage)}" target="_blank" rel="noopener">Open full-size sheet</a>` : ''}
         </div>
       </div>` : '';
 
-    const back = document.createElement('div');
-    back.className = 'vg-overlay';
-    back.innerHTML = `<div class="vg-sheet" role="dialog" aria-modal="true" aria-labelledby="vg-title">
-      <header class="vg-head">
+    const H = mode === 'page' ? 'h1' : 'h2';
+    return `<header class="vg-head">
         <div class="vg-head-row">
           <div class="vg-head-title">
             <span class="vg-eyebrow">${STAR(14)} ${esc(t.name)}</span>
-            <h2 id="vg-title">${esc(g.election)} Voter Guide</h2>
-            <div class="vg-head-sub">${cd >= 0 ? `<span>Vote by ${esc(longDate(g))}</span>` : ''}${cd > 0 ? `<span class="vg-days">${cd} ${cd === 1 ? 'day' : 'days'} left</span>` : cd === 0 ? '<span class="vg-days">Election Day</span>' : ''}</div>
+            <${H} id="vg-title">${esc(g.election)} Voter Guide</${H}>
+            <div class="vg-head-sub">${cd >= 0 ? `<span>Vote by ${esc(longDate(g))}</span>` : ''}${cd > 0 ? `<span class="vg-days">${cd} ${cd === 1 ? 'day' : 'days'} left</span>` : cd === 0 ? '<span class="vg-days">Election Day</span>' : ''}<span>${all.length} candidates · ${g.measures.length} measures</span></div>
           </div>
           <div class="vg-head-actions">
             <button class="vg-icon-btn" data-g="print" aria-label="Print or save as PDF">${IC_PRINT}<span class="vg-lbl">Print</span></button>
             <button class="vg-icon-btn" data-g="share" aria-label="Copy link to this guide">${IC_SHARE}<span class="vg-lbl">Share</span></button>
-            <button class="vg-icon-btn" data-g="close" aria-label="Close voter guide">${IC_X}</button>
+            ${mode === 'page' ? '' : `<button class="vg-icon-btn" data-g="close" aria-label="Close voter guide">${IC_X}</button>`}
           </div>
         </div>
         <div class="vg-tabs" role="tablist" aria-label="Guide sections">
@@ -380,30 +405,56 @@ body.vg-open { overflow:hidden; }
           <span class="vg-paid">${esc(g.paidFor)}</span>
           ${g.source ? `<a class="vg-source" href="${esc(g.source)}" target="_blank" rel="noopener">${esc(g.source.replace(/^https?:\/\//, ''))} ${IC_OUT}</a>` : ''}
         </footer>
-      </div>
-    </div>`;
+      </div>`;
+  }
+  function guideTabs(g) {
+    const tabs = [
+      { id: 'candidates', label: 'Candidates', n: races(g).length },
+      { id: 'measures', label: 'Measures', n: g.measures.length },
+    ];
+    if (g.printImage) tabs.push({ id: 'card', label: 'Printed card' });
+    return tabs;
+  }
 
-    const $ = (s) => back.querySelector(s);
-    const body = $('.vg-body');
+  /* Wires tabs, search, jump links and actions inside root. scroller: the element that scrolls (or window). */
+  function wire(root, t, g, opts) {
+    const tabs = guideTabs(g);
+    let tab = tabs.some((x) => x.id === opts.tab) ? opts.tab : 'candidates';
+    const $ = (s) => root.querySelector(s);
     const search = $('[data-g="search"]');
+    const isPage = opts.mode === 'page';
+    const scroller = isPage ? null : $('.vg-body');
 
+    function scrollTopTo(y, smooth) {
+      const behavior = smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto';
+      if (scroller) scroller.scrollTo({ top: Math.max(0, y), behavior });
+      else window.scrollTo({ top: Math.max(0, y), behavior });
+    }
+    function stickyOffset() {
+      const row = $('.vg-search-row');
+      const header = isPage ? (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--s-header-h'), 10) || 0) : 0;
+      return (row ? row.offsetHeight : 0) + header + 12;
+    }
     function setTab(id, focusTab) {
       tab = id;
-      back.querySelectorAll('.vg-tab').forEach((b) => {
+      root.querySelectorAll('.vg-tab').forEach((b) => {
         const on = b.dataset.tab === id;
         b.setAttribute('aria-selected', on);
         b.tabIndex = on ? 0 : -1;
         if (on && focusTab) b.focus();
       });
-      back.querySelectorAll('.vg-panel').forEach((p) => { p.hidden = p.dataset.panel !== id; });
+      root.querySelectorAll('.vg-panel').forEach((p) => { p.hidden = p.dataset.panel !== id; });
       $('.vg-search-row').hidden = id === 'card';
-      body.scrollTop = 0;
+      if (scroller) scroller.scrollTop = 0;
+      else if (opts.started) {
+        const top = $('.vg-tabs').getBoundingClientRect().top + window.scrollY - stickyOffset() + ($('.vg-search-row').offsetHeight || 0);
+        if (window.scrollY > top) scrollTopTo(top, false);
+      }
     }
-
     function applySearch() {
       const q = search.value.trim().toLowerCase();
       ['candidates', 'measures'].forEach((pid) => {
-        const panel = back.querySelector(`[data-panel="${pid}"]`);
+        const panel = root.querySelector(`[data-panel="${pid}"]`);
         let shown = 0;
         panel.querySelectorAll('[data-q]').forEach((n) => {
           const hit = !q || n.dataset.q.includes(q);
@@ -416,27 +467,71 @@ body.vg-open { overflow:hidden; }
         const empty = panel.querySelector('[data-empty]');
         empty.hidden = shown > 0;
         if (!shown) empty.textContent = `Nothing in ${pid} matches “${search.value.trim()}”.`;
-        const n = back.querySelector(`[data-n="${pid}"]`);
+        const n = root.querySelector(`[data-n="${pid}"]`);
         if (n) n.textContent = shown;
       });
     }
-
     function focusItem(key) {
-      const node = back.querySelector(`.vg-panel:not([hidden]) [data-key="${slug(key)}"]`);
+      const node = root.querySelector(`.vg-panel:not([hidden]) [data-key="${slug(key)}"]`);
       if (!node) return;
-      back.querySelectorAll('.is-focus').forEach((n) => n.classList.remove('is-focus'));
+      root.querySelectorAll('.is-focus').forEach((n) => n.classList.remove('is-focus'));
       node.classList.add('is-focus');
-      const top = node.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - $('.vg-search-row').offsetHeight - 12;
-      body.scrollTo({ top: Math.max(0, top), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      if (scroller) scrollTopTo(node.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - stickyOffset(), true);
+      else scrollTopTo(node.getBoundingClientRect().top + window.scrollY - stickyOffset(), true);
       setTimeout(() => node.classList.remove('is-focus'), 2600);
     }
-
     function share() {
-      const url = location.origin + location.pathname + location.search + '#/public-hub/voter-guide';
+      const url = publicUrl(t);
       const done = () => App.toast('Link to the voter guide copied. Paste it in a text or email.', 'ok');
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
-      else done();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+        else done();
+      } catch (e) { done(); }
     }
+    root.addEventListener('click', (e) => {
+      const tb = e.target.closest('.vg-tab');
+      if (tb) { setTab(tb.dataset.tab); return; }
+      const j = e.target.closest('[data-jump]');
+      if (j) { focusItem(j.dataset.jump); return; }
+      const a = e.target.closest('[data-g]');
+      if (!a) return;
+      if (a.dataset.g === 'close' && opts.onClose) opts.onClose();
+      else if (a.dataset.g === 'print') printGuide();
+      else if (a.dataset.g === 'share') share();
+    });
+    root.addEventListener('keydown', (e) => {
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.classList.contains('vg-tab')) {
+        const i = tabs.findIndex((x) => x.id === tab);
+        const n = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        setTab(tabs[n].id, true);
+      }
+    });
+    search.addEventListener('input', applySearch);
+    setTab(tab);
+    opts.started = true;
+    return { setTab, focusItem, tab: () => tab };
+  }
+
+  function printGuide() {
+    document.body.classList.add('vg-printing');
+    const done = () => { document.body.classList.remove('vg-printing'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    window.print();
+    setTimeout(done, 1500);
+  }
+
+  function open(t, opts) {
+    t = t || App.ctx.tenant;
+    const g = get(t);
+    if (!g) { App.toast(`${t.shortName}’s voter guide is published after the central committee votes on endorsements.`, 'info'); return; }
+    injectStyle();
+    if (openApi) openApi.close(true);
+    opts = opts || {};
+    const prevFocus = document.activeElement;
+
+    const back = document.createElement('div');
+    back.className = 'vg-overlay';
+    back.innerHTML = `<div class="vg-sheet" role="dialog" aria-modal="true" aria-labelledby="vg-title">${guideHtml(t, g, 'overlay')}</div>`;
 
     function focusables() {
       return Array.from(back.querySelectorAll('a[href],button:not([disabled]),input,[tabindex]:not([tabindex="-1"])')).filter((n) => n.offsetParent !== null);
@@ -450,13 +545,7 @@ body.vg-open { overflow:hidden; }
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
-      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.classList.contains('vg-tab')) {
-        const i = tabs.findIndex((x) => x.id === tab);
-        const n = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
-        setTab(tabs[n].id, true);
-      }
     }
-
     function close(instant) {
       document.removeEventListener('keydown', onKey, true);
       document.body.classList.remove('vg-open');
@@ -465,37 +554,36 @@ body.vg-open { overflow:hidden; }
       else { back.classList.remove('in'); setTimeout(() => back.remove(), 200); }
       if (prevFocus && prevFocus.focus) try { prevFocus.focus({ preventScroll: true }); } catch (err) { /* ignore */ }
     }
-
     back.addEventListener('mousedown', (e) => { if (e.target === back) close(); });
-    back.addEventListener('click', (e) => {
-      const tb = e.target.closest('.vg-tab');
-      if (tb) { setTab(tb.dataset.tab); return; }
-      const j = e.target.closest('[data-jump]');
-      if (j) { focusItem(j.dataset.jump); return; }
-      const a = e.target.closest('[data-g]');
-      if (!a) return;
-      if (a.dataset.g === 'close') close();
-      else if (a.dataset.g === 'print') window.print();
-      else if (a.dataset.g === 'share') share();
-    });
-    search.addEventListener('input', applySearch);
 
     document.body.appendChild(back);
     document.body.classList.add('vg-open');
     document.addEventListener('keydown', onKey, true);
+    const ctl = wire(back, t, g, { mode: 'overlay', tab: opts.tab, onClose: () => close() });
     openApi = { close };
-    setTab(tab);
     requestAnimationFrame(() => {
       back.classList.add('in');
       const sel = back.querySelector('.vg-tab[aria-selected="true"]');
       if (sel) sel.focus({ preventScroll: true });
-      if (opts.focus) setTimeout(() => focusItem(opts.focus), 220);
-      if (opts.print) setTimeout(() => window.print(), 350);
+      if (opts.focus) setTimeout(() => ctl.focusItem(opts.focus), 220);
+      if (opts.print) setTimeout(printGuide, 350);
     });
     return openApi;
   }
 
-  /* Any [data-vg] control on any screen opens the guide for the current committee. */
+  /* Full-page guide for the public site (#/guide). Returns { cleanup }. */
+  function page(host, t, opts) {
+    const g = get(t);
+    if (!g || !host) return {};
+    injectStyle();
+    opts = opts || {};
+    host.innerHTML = `<div class="vg-page"><div class="vg-sheet vg-sheet-page">${guideHtml(t, g, 'page')}</div></div>`;
+    const ctl = wire(host, t, g, { mode: 'page', tab: opts.tab });
+    if (opts.focus) setTimeout(() => ctl.focusItem(opts.focus), 200);
+    return { cleanup: () => {}, ctl };
+  }
+
+  /* Any [data-vg] control opens the guide overlay for the current committee. */
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-vg]');
     if (!a) return;
@@ -506,5 +594,5 @@ body.vg-open { overflow:hidden; }
     else open(t, { tab: a.dataset.vgTab, focus: a.dataset.vgFocus });
   }, true);
 
-  App.voterGuide = { get, teaser, bar, open, daysLeft };
+  App.voterGuide = { get, teaser, bar, open, page, daysLeft, publicUrl };
 })();

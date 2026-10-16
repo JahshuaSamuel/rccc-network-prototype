@@ -24,304 +24,225 @@
   /* Turn a checkbox/toggle inside a data-tour element ON (idempotent). */
   function toggleOn(id) {
     const host = tourEl(id);
-    if (!host) { say('The zones switch is still loading. Try again in a moment.', 'info'); return; }
+    if (!host) { say('The zone switch is still loading. Try again in a moment.', 'info'); return; }
     const input = host.matches('input[type="checkbox"]') ? host : q('input[type="checkbox"]', host);
-    if (input) { if (!input.checked) input.click(); else say('The zones overlay is already on.', 'info'); return; }
+    if (input) { if (!input.checked) input.click(); else say('Zone labels are already on. Scroll the page to see them.', 'info'); return; }
     const btn = host.matches('button') ? host : q('button', host);
     if (btn) btn.click();
   }
 
 
-  /* AI Campaign Director helpers (scripted run on screens/director.js). */
-  const dirQ = (sel) => q(sel);
-  function dirStatus() { const b = dirQ('.dir-req-status'); return b ? b.textContent.trim().toLowerCase() : ''; }
-  function dirEnsureRunning() {
-    const st = dirStatus();
-    if (st === 'ready' || st === 'paused') clickIn('dir-request', /^(run|resume)$/i, false);
-  }
-  function dirSupplyNumber() {
-    const use = dirQ('[data-tour="dir-gate"] [data-act="fill-fppc"]');
-    if (!use) return false;
-    use.click();
-    setTimeout(() => clickIn('dir-gate', /^confirm/i, false), 250);
+  /* Fill a form field the way a person would, so the screen's own input handlers run. */
+  function typeInto(sel, value) {
+    const el = q(sel);
+    if (!el) return false;
+    el.value = value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
-  /* Summary step: resolve any pending gate or approval, keep the run going, report when finished. */
-  let ffLast = 0;
-  function dirFastForward() {
-    if (/finished/.test(dirStatus())) return true;
-    if (Date.now() - ffLast > 600) {
-      ffLast = Date.now();
-      if (!dirSupplyNumber()) {
-        const ap = dirQ('[data-tour="dir-approval"] [data-act="approve"]');
-        if (ap) ap.click(); else dirEnsureRunning();
-      }
-    }
+
+  /* Meetings & Voting: the tour starts the sample meeting so check-in, quorum and ballots are live. */
+  function startMeeting() { try { if (App.governance && App.governance.startMeeting && !(App.governance.isStarted && App.governance.isStarted())) App.governance.startMeeting(); } catch (e) { /* ignore */ } }
+
+  /* AI Campaign Director helpers (screens/director.js). */
+  function dirHasPlan() { return !!q('[data-tour="dir-summary"]'); }
+  function dirDraftIfEmpty() {
+    if (q('[data-tour="dir-plan"]') && q('#dr-draft')) { q('#dr-draft').click(); return true; }
     return false;
   }
-  function dirApproveOrUnblock() {
-    if (dirSupplyNumber()) { say('Committee number supplied from the filing. The run continues to approval.', 'ok'); return; }
-    const ap = dirQ('[data-tour="dir-approval"] [data-act="approve"]');
-    if (ap) { ap.click(); return; }
-    if (dirStatus() === 'finished') { say('Everything is approved. The summary is ready below.', 'ok'); return; }
-    dirEnsureRunning();
-    say('Approval opens once the drafts are ready. The run is working now.', 'info');
+  function scrollTo(sel) {
+    const el = q(sel);
+    if (el) el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
   }
 
   /* ---------------- the story ---------------- */
-  // main:true = part of the ~27-step presenter tour. Everything is in allSteps (for jump-to).
+  // main:true = the standard tour. Everything is in allSteps (for jump-to).
   const B = 'board', M = 'master';
   const ALL = [
     /* ===== Welcome ===== */
     { chapter: 'Welcome', main: true, route: 'overview', target: 'overview-hero', role: B,
       title: 'One platform for every county committee',
-      body: 'Everything your committee runs lives in one place: the public website, member tools, candidate sites, walk lists and meetings. Volunteers learn it once, and each new team of officers picks up right where the last one left off.',
-      notes: ['Open with the familiar pain: every new board inherits a stale site and a dozen logins.',
-        'This is a working prototype with invented sample data. Every person shown is fictional.',
-        'Santa Clara County Republican Party (SVGOP) is our pilot county.'] },
+      body: 'Your committee runs its public website, member list, campaign sites, walk lists and meetings from one sign-in. Each new team of officers picks up right where the last one left off.' },
     { main: true, route: 'overview', target: 'tenant-switcher', role: B,
       title: 'Same platform, your own committee',
-      body: 'Switch committees here. Demo County GOP (Grand Old Party) runs on the very same platform with its own colors, members, news and voter data. Each county sees only its own information.',
-      notes: ['Press the action button and watch the colors, headlines and numbers change.',
-        'Separation is built into the database itself, so each county’s members and voters stay with that county.',
-        'Every county keeps its own web address, such as svgop.com.'],
+      body: 'Switch committees here. Demo County GOP runs on the same platform with its own colors, members, news and voter data. Each county sees only its own information.',
       action: {
         label: () => (App.state.tenant === 'demo' ? 'Back to SVGOP' : 'Switch to Demo County'),
-        run: () => App.setTenant(App.state.tenant === 'demo' ? 'svgop' : 'demo'),
+        run: () => {
+          const to = App.state.tenant === 'demo' ? 'svgop' : 'demo';
+          App.setTenant(to, true);
+          say(`Now showing ${to === 'demo' ? 'Demo County GOP' : 'SVGOP'}, signed in as its sample board chair.`, 'ok');
+        },
       } },
     { main: true, route: 'overview', target: 'role-switcher', role: B, tenant: 'svgop',
       title: 'Everyone sees what fits their job',
-      body: 'Choose who you are viewing as: network admin, executive board, committee member, volunteer or public visitor. Volunteers get a simple screen, and officers keep the sensitive controls.',
-      notes: ['We are back on SVGOP, viewing as the Executive Board.',
-        'Roles mirror your bylaws: executive board, members, alternates, volunteers.',
-        'Sign-in uses MFA (Multi-Factor Authentication) for anyone with access to member or voter data.'] },
+      body: 'Your account decides what you see. A supporter sees the public site, a committee member also sees walk lists and ballots, Executive Board members get the controls, and Master Network admins see every county. Sign-in sends a 6-digit code to your email or phone.',
+      tip: 'The account menu lists the sample accounts, so you can sign in as each role in one click.',
+      pick: () => { const m = q('.acct-menu'); return m && !m.hidden && m.offsetParent ? m : null; },
+      action: { label: 'Open the account menu', run: () => { const b = q('.acct-btn'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); } },
+      cleanup: () => { const b = q('.acct-btn'); if (b && b.getAttribute('aria-expanded') === 'true') b.click(); } },
+    { main: true, route: 'overview', target: 'overview-shortcuts', role: B, tenant: 'svgop',
+      title: 'Your shortcuts, with today’s numbers',
+      body: 'After you sign in, the overview greets you by name and shows the jobs that fit your account: for the board chair, campaign plans waiting for approval, doors left to knock and open ballots.' },
     { main: true, route: 'overview', target: 'nav', role: B,
       prepare: () => { if (window.innerWidth <= 900) document.body.classList.add('drawer-open'); },
       cleanup: () => { document.body.classList.remove('drawer-open'); },
-      title: 'Every tool, one menu',
-      body: 'Public site, committee portal, candidate tools, field work, meetings and the network console all sit in one menu behind one login. New officers find everything in the same place every year.',
-      notes: ['A small lock means that role would normally see the area as restricted; the demo opens everything.',
-        'One login replaces the website host, the email tool, the spreadsheet and the meeting app.'] },
+      title: 'Every tool sits in one menu',
+      body: 'The public site, Committee Portal, Campaign-in-a-Box, Field Organizer, Meetings & Voting and Master Network all sit behind one sign-in. A lock means your account can’t open that area yet.' },
 
     /* ===== Public site ===== */
     { chapter: 'Your public website', main: true, route: 'public-hub', target: 'hub-zones-toggle', role: B,
       title: 'See who controls each part of the page',
-      body: 'Turn on the zones overlay. Purple frames are network slots, filled by the shared network. Frames in your county’s color are local slots, and your board decides everything in them.',
-      notes: ['Press “Turn on the zones overlay”, then scroll so the board sees the frames.',
-        'This is the heart of the pitch: shared where it helps, local where it matters.'],
-      action: { label: 'Turn on the zones overlay', run: () => toggleOn('hub-zones-toggle') } },
-    { main: true, route: 'public-hub', target: 'hub-master-slot', role: B,
-      title: 'Network slots keep your site fresh',
-      body: 'Network slots fill themselves with statewide news, video and sponsor messages from the Master Network. Your site stays current every day, including the quiet months between elections.',
-      notes: ['A stale site tells voters the party is asleep. This keeps it alive with zero volunteer hours.',
-        'The county can hide or pin network items from its portal; only locked alerts stay fixed.'] },
-    { main: false, route: 'public-hub', target: 'hub-breaking', role: B,
-      title: 'Urgent alerts reach every county',
-      body: 'When the network sends a locked alert, such as an election-day polling notice, it appears at the top of every county site at once.',
-      notes: ['Locked alerts are rare and reserved for urgent, network-wide messages.'] },
-    { main: false, route: 'public-hub', target: 'hub-tabs', role: B,
-      title: 'National, state, county and city news',
-      body: 'Visitors browse news by level, from national down to their own city. County posts written in the portal appear first, marked “New”.',
-      notes: ['All headlines here are invented samples from invented sources.'] },
-    { main: false, route: 'public-hub', target: 'hub-video', role: B,
-      title: 'A video hub for your county',
-      body: 'Shared video channels plus your own: candidate introductions, meeting recaps and training clips, all on your county’s site.',
-      notes: ['Channel names are invented for the demo.'] },
-    { main: true, route: 'public-hub', target: 'hub-local-slot', role: B,
-      title: 'Local slots carry your county’s voice',
-      body: 'Local slots belong to your committee: your events, your endorsements, your local sponsors. Your board decides what goes here, and the network fills only the spaces marked as network slots.',
-      notes: ['Point to the Lincoln Day Dinner or the next local event.',
-        'Same frame style everywhere: purple tag means network, brand color means local.'] },
+      body: 'Turn on the zone labels. Purple zones come from Master Network. Zones in your county’s color are local, and your board decides what goes in them.',
+      action: { label: 'Show zone labels', run: () => toggleOn('hub-zones-toggle') } },
+    { main: true, route: 'public-hub', target: 'hub-preview', role: B,
+      title: 'Network zones keep your site current',
+      body: 'Network zones fill themselves with statewide news and video from Master Network, so your site has something new every day, even in the quiet months between elections. When Master Network sends a locked statewide alert, it shows across the top of the page.' },
+    { main: true, route: 'public-hub', target: 'hub-preview', role: B,
+      title: 'Local zones carry your county’s voice',
+      body: 'Local zones belong to your committee, from events and endorsements to local sponsors. Your board decides what goes there, and Master Network fills only the network zones.' },
+    { main: true, route: 'public-hub', target: 'hub-preview', role: B,
+      title: 'Voters see it at your own web address',
+      body: 'This preview is the same page voters open at your county’s address. RSVPs, volunteer sign-ups and donations made there are saved and show up in the Committee Portal.',
+      action: { label: 'Open the public site in a new tab', run: () => { window.open(`index.html?county=${encodeURIComponent(App.state.tenant || 'svgop')}`, '_blank', 'noopener'); } } },
 
-    /* ===== Portal & network ===== */
-    { chapter: 'Committee portal & network', main: true, route: 'portal', target: 'portal-network-items', role: B,
+    /* ===== Committee Portal ===== */
+    { chapter: 'Committee Portal', main: true, route: 'portal/network', target: 'portal-network-items', role: B,
       title: 'Your county decides what shows',
-      body: 'Here the board reviews everything the network sends. Pin what matters locally, hide what fits elsewhere, and add your own posts. Urgent alerts with a lock stay fixed so the network speaks with one voice.',
-      notes: ['Try hiding an item, then visit the public site: it is gone there too.',
-        'Pinning moves an item to the top of the county’s home page.'] },
-    { main: false, route: 'portal', target: 'portal-lock', role: B,
-      title: 'Locked items, clearly marked',
-      body: 'A lock marks the few network alerts that stay in place. Everything else is your county’s call.',
-      notes: ['Locks are set only by the Master Network for urgent items.'] },
+      body: 'Here the board reviews everything Master Network sends. Pin what matters locally and hide what doesn’t fit. Locked urgent alerts stay fixed so every county shows the same notice.' },
+    { main: false, route: 'portal/network', target: 'portal-lock', role: B,
+      title: 'A lock marks the alerts that stay put',
+      body: 'Only Master Network can lock an item, and only for urgent alerts. Everything else is your county’s call.' },
     { main: true, route: 'portal/ads', target: 'portal-ads-map', role: B,
-      title: 'Every ad space, mapped',
-      body: 'This map shows every ad space on your site and who fills it. Network spaces carry statewide sponsors; local spaces are yours to fill with businesses and supporters from your county.',
-      notes: ['Local sponsors are a natural fit for county fundraising.',
-        'The same dashed frames appear here as on the public site, so nobody has to learn two systems.'] },
+      title: 'See every ad slot on your site',
+      body: 'This map shows every ad slot on your site and who fills it. Network slots carry statewide sponsors, and local slots are yours to fill with businesses and supporters from your county.' },
     { main: true, route: 'portal/network', target: 'portal-chat', role: B,
-      title: 'Counties helping counties',
-      body: 'Neighboring committees share a regional channel to plan joint events, swap volunteers and trade what works. A small county gets the playbook of a large one in a single message.',
-      notes: ['Regional channels, working groups and direct messages between chairs.',
-        'Joint events, like a regional Lincoln Day Dinner, are planned right here.'] },
+      title: 'Counties help each other here',
+      body: 'Neighboring committees share a regional channel to plan joint events and trade what works, like a final-week door hanger another county already printed.' },
     { main: false, route: 'portal/network', target: 'portal-assets', role: B,
       title: 'A shared library of what works',
-      body: 'Door hangers, flyers, playbooks and precinct strategies shared by other counties. Copy one, add your county’s details, and print.',
-      notes: ['Download and copy counts show what other counties trust.'] },
+      body: 'Other counties share their door hangers, flyers, playbooks and precinct strategies here. Copy one and it switches to your county’s name, ready to print.' },
 
     /* ===== Master Network ===== */
-    { chapter: 'The Master Network', main: false, route: 'master', target: 'master-kpis', role: M,
-      title: 'The whole network in four numbers',
-      body: 'Sites live, weekly visitors, candidates recruited and volunteers, across every county on the platform.',
-      notes: ['Sample figures only.'] },
-    { chapter: 'The Master Network', main: true, route: 'master', target: 'master-map', role: M,
-      title: 'The network at a glance',
-      body: 'Network admins see every county on one map: which are live, which are onboarding, and where volunteers and visitors are growing. County boards see their own county; this view is for the network team.',
-      notes: ['We switched to “Master Network Admin” for this chapter.',
-        'SVGOP is live; other counties show as onboarding or invited.'] },
+    { chapter: 'Master Network', main: true, route: 'master', target: 'master-kpis', role: M,
+      title: 'The whole network in five numbers',
+      body: 'These five numbers add up every county on the platform: live sites, weekly visitors, candidates recruited, volunteers and money raised online.',
+      tip: 'The tour signs in as the sample Master Network admin for this chapter.' },
+    { main: true, route: 'master', target: 'master-map', role: M,
+      title: 'Every county on one map',
+      body: 'Network admins see every county on one map, with live counties and counties still setting up in different colors. County boards see only their own county.' },
     { main: true, route: 'master/push', target: 'push-targeting', role: M,
       title: 'Send to exactly the right counties',
-      body: 'Write once, then choose who receives it: every county, one state, one region or a hand-picked list. One statewide message reaches every county site in a single step, with no copying and pasting.',
-      notes: ['Show the region option: Bay Area counties only.',
-        'Priority decides where the item sits on each county’s page.'] },
+      body: 'Write the update once, then pick the counties that receive it and the news tab it lands in. The preview shows how it looks on each county homepage before you send it.',
+      action: { label: 'Fill in a sample update', run: () => {
+        typeInto('#mn-title', 'Vote centers open Saturday across California');
+        typeInto('#mn-sum', 'Every county vote center opens at 8 AM Saturday. Check your registration before you go.');
+        const pv = q('#mn-preview'); if (pv) pv.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'nearest' });
+      } } },
     { main: true, route: 'master/push', target: 'push-lock', role: M,
       title: 'Lock what must stay up',
-      body: 'For urgent alerts, such as an election-day polling notice, the admin can lock the item. Locked items stay on every county site until the network releases them. Counties pin or hide everything else freely.',
-      notes: ['Locks are the exception, used sparingly, so counties keep trusting the network.'] },
+      body: 'Counties can hide or pin regular pushes. A locked push stays on every targeted site, and a locked push at top priority becomes the red statewide alert across the top of each county homepage.',
+      action: { label: 'Make it a statewide alert', run: () => { const b = q('[data-act="alert-preset"]'); if (b && !b.hidden) b.click(); scrollTo('#mn-preview'); } } },
     { main: true, route: 'master/push', target: 'push-publish', role: M,
-      title: 'Publish once, live everywhere',
-      body: 'Press Publish and the item goes live across every county you targeted. Each county site updates on its own, and the network sees the reach right away.',
-      notes: ['Press the action button to publish the sample item.',
-        'Afterward, the public site shows it in the network slot.'],
-      action: { label: 'Press Publish', run: () => clickIn('push-publish', /publish|send|push/i) } },
+      title: 'Publish once and every targeted site updates',
+      body: 'Press Push and the update goes live on every county you picked. The list below shows each county’s delivery status, including any county that chose to hide it.' },
     { main: false, route: 'master/ads', target: 'master-ads', role: M,
-      title: 'Network sponsors, shared fairly',
-      body: 'Network ad spaces carry statewide sponsors across every county site, alongside each county’s own local spaces.',
-      notes: ['Fill rate shows how much network space is in use.'] },
-    { main: false, route: 'master/analytics', target: 'master-analytics', role: M,
-      title: 'Growth, week by week',
-      body: 'Visitors, sign-ups and online donations across the network, so leaders see what is working.',
-      notes: ['Sample trend data only.'] },
+      title: 'Network ads run on every county site',
+      body: 'Each network slot shows the newest running ad for that county. Create, pause or edit an ad here, and a sample fills any slot you haven’t claimed.' },
+    { main: true, route: 'master/analytics', target: 'master-analytics', role: M,
+      title: 'See which counties are moving',
+      body: 'Every chart answers a question a state director asks: who is showing up, who is knocking doors and where the money comes from. The numbers include every RSVP, sign-up, gift and door saved on the county sites.' },
 
-    /* ===== Campaign-in-a-box ===== */
-    { chapter: 'Campaign-in-a-box', main: true, route: 'candidate', target: 'cand-pipeline', role: B,
+    /* ===== Campaign-in-a-Box ===== */
+    { chapter: 'Campaign-in-a-Box', main: true, route: 'candidate', target: 'cand-pipeline', role: B,
       title: 'From recruited to on the ballot, in one view',
-      body: 'Track every candidate your committee recruits: recruited, filed, endorsed, active campaign. The board sees at a glance who needs help next, so every candidate gets the next step on time.',
-      notes: ['Recruiting is the job that most often slips when volunteers turn over.',
-        'All candidates shown are fictional.'] },
+      body: 'Track every candidate your committee recruits as they move from recruited to filed, endorsed and active. The board sees at a glance who needs help next.' },
     { main: true, route: 'candidate/builder', target: 'wizard-steps', role: B,
       title: 'A campaign site in a few guided steps',
-      body: 'Candidates answer plain questions: office, district, issues and committee details. The builder turns those answers into a campaign website, donate page and print pieces, so first-time candidates start strong.',
-      notes: ['Walk through the steps quickly; each one is a short form.',
-        'Committee name and FPPC (Fair Political Practices Commission) number are collected once and reused everywhere.'] },
+      body: 'Candidates answer plain questions about the office, district, issues and committee details. The builder turns those answers into a campaign site, a donate page, print proofs and a week of draft posts.' },
     { main: false, route: 'candidate/builder', target: 'wizard-launch', role: B,
-      title: 'Hand it to the AI Campaign Director',
-      body: 'One button sends the candidate’s answers to the AI (Artificial Intelligence) Campaign Director, which drafts everything for your review.',
-      notes: ['This button jumps to the Director screen.'] },
+      title: 'The board reviews before anything goes live',
+      body: 'On the last step the campaign site goes to the Executive Board for review. A board member approves it and the site opens at its own address, with the disclaimer in place.' },
     { main: false, route: 'candidate/microsite', target: 'microsite-donate', role: B,
       title: 'Donations from day one',
-      body: 'Every candidate site includes a donate page from the start, so supporters can give the moment they hear the name.',
-      notes: ['Sample amounts only.'] },
+      body: 'This preview is the candidate’s live campaign site. It has a Donate button from the start, so supporters can give the moment they hear the name.' },
     { main: true, route: 'candidate/microsite', target: 'microsite-disclaimer', role: B,
       title: 'Disclaimers, always in place',
-      body: 'Every candidate page carries its “Paid for by” disclaimer with the FPPC (Fair Political Practices Commission) number, placed automatically. Volunteers keep candidates compliant without memorizing the rules.',
-      notes: ['The same disclaimer flows to print pieces and social posts.',
-        'If a number is missing, the platform asks for it and holds the page.'] },
+      body: 'Every campaign page carries its “Paid for by” disclaimer with the committee’s FPPC (California Fair Political Practices Commission) ID. If the ID is missing, the platform asks for it and holds the page.' },
     { main: false, route: 'candidate/print', target: 'print-check', role: B,
-      title: 'Print-ready, with a compliance check',
-      body: 'Yard signs, door hangers and slate cards are checked for the disclaimer before they go to the printer.',
-      notes: ['Show the check passing or asking for a missing detail.'] },
+      title: 'Print-ready, with a disclaimer check',
+      body: 'Every print proof is checked for the disclaimer before it goes to the printer.' },
     { main: false, route: 'candidate/social', target: 'social-approve', role: B,
       title: 'Social posts, approved by people',
-      body: 'Drafted posts wait for a person to approve them before they go out.',
-      notes: ['Approval keeps the committee’s voice consistent.'] },
+      body: 'Drafted posts wait for a person to approve them before they go out.' },
 
     /* ===== Field ===== */
     { chapter: 'Field & canvassing', main: true, route: 'field', target: 'field-map', role: B,
-      title: 'Precinct turf, drawn for you',
-      body: 'Your precincts and walk turfs on one map, color-coded by volunteer, with doors knocked updating as they happen. Field chairs see progress without phone calls or spreadsheets.',
-      notes: ['Each color is one volunteer’s turf.',
-        'All voters and addresses shown are invented.'] },
+      title: 'Your precinct turf on one map',
+      body: 'Your precincts and walk turfs on one map, each turf in its own color, with doors knocked updating as volunteers record them. Field chairs see progress without phone calls or spreadsheets.' },
     { main: false, route: 'field', target: 'field-filters', role: B,
-      title: 'Find the right doors',
-      body: 'Filter by party, likelihood to vote and precinct to focus volunteer time where it counts most.',
-      notes: ['Filters update the map instantly.'] },
+      title: 'Read the map at a glance',
+      body: 'The map key names each turf’s color and shows which households are knocked. Filter by turnout score and support score so volunteers spend their time on the doors that count.',
+      action: { label: 'Open the map key', run: () => { const d = q('[data-tour="field-filters"]'); if (d && d.tagName === 'DETAILS') d.open = true; } } },
     { main: true, route: 'field', target: 'field-privacy', role: B,
       title: 'Voter data stays in your county',
-      body: 'Voter files live inside your county’s own space. Volunteers see only the addresses on their own walk list, and the county decides who sees more.',
-      notes: ['Separation between counties is enforced in the database itself.',
-        'Every export is logged, so the board knows where data went.'] },
+      body: 'Voter files live inside your county’s own space. Volunteers see only the addresses on their own walk list, and the county decides who sees more.' },
     { main: false, route: 'field/list', target: 'field-build', role: B,
       title: 'Build a walk list in seconds',
-      body: 'Pick a turf and filters, and the platform builds a walk list in a sensible walking order, ready to assign.',
-      notes: ['Assign directly to a volunteer from here.'] },
+      body: 'Pick a turf and filters, and the platform builds a walk list in a sensible walking order, ready to assign.' },
     { main: true, route: 'field/canvass', target: 'field-phone', role: B,
       title: 'Canvassing from any phone',
-      body: 'Volunteers open their walk list on their own phone and record each door in a tap. Results flow back to the field chair automatically, ready for the next shift.',
-      notes: ['Tap through a door or two on the phone preview.',
-        'Works with weak signal and catches up when the phone reconnects.'] },
+      body: 'Volunteers open their walk list on their own phone and record each door in a tap. Results are saved and flow back to the field chair for the next shift.' },
     { main: false, route: 'field/canvass', target: 'field-offline', role: B,
       title: 'Keeps working with weak signal',
-      body: 'Doors recorded with weak signal are saved on the phone and sync once it reconnects.',
-      notes: ['Hillside and rural precincts often have spotty coverage.'] },
+      body: 'Doors recorded with weak signal are saved on the phone and send once it reconnects.' },
 
-    /* ===== Governance ===== */
-    { chapter: 'Meetings & voting', main: false, route: 'governance', target: 'gov-meeting', role: B,
-      title: 'Meetings, agenda included',
-      body: 'Schedule the central committee meeting, share the agenda and open the video call from one place.',
-      notes: ['Agenda items link to the ballots for each vote.'] },
-    { chapter: 'Meetings & voting', main: true, route: 'governance', target: 'gov-quorum', role: B,
-      title: 'Quorum, counted for you',
-      body: 'As members join, the platform counts seated members and verified proxies and shows the moment you reach quorum. The chair runs the meeting with confidence, and the record is accurate.',
-      notes: ['Quorum rule follows your bylaws: majority of seated members in this sample.',
-        'Alternates seat automatically when a member is absent, if your bylaws allow.'] },
-    { main: true, route: 'governance/ballots', target: 'gov-ballot', role: B,
-      title: 'Secret ballots, roll calls and weighted votes',
-      body: 'Run a secret ballot, a roll call or a weighted vote right inside the meeting. Each member votes once, results follow your bylaws’ threshold, and secret ballots keep every choice private.',
-      notes: ['Endorsements often need two-thirds; the threshold is set per ballot.',
-        'Each voter gets a receipt proving the vote counted, without revealing the choice.'] },
-    { main: false, route: 'governance/ballots', target: 'gov-receipt', role: B,
-      title: 'A receipt for every vote',
-      body: 'Each member gets a receipt confirming the vote was counted, while the choice itself stays private.',
-      notes: ['Receipts settle disputes after close votes.'] },
-    { main: false, route: 'governance/ballots', target: 'gov-results', role: B,
-      title: 'Results, the moment voting closes',
-      body: 'Results appear as soon as the chair closes the ballot, measured against the threshold your bylaws require.',
-      notes: ['Results go straight into the minutes.'] },
+    /* ===== Meetings ===== */
+    { chapter: 'Meetings & Voting', main: false, route: 'governance', target: 'gov-meeting', role: B, prepare: startMeeting,
+      title: 'The agenda, on the meeting page',
+      body: 'The agenda for the central committee meeting sits on the same page as check-in, quorum and the ballots, so members follow along item by item.' },
+    { chapter: 'Meetings & Voting', main: true, route: 'governance', target: 'gov-quorum', role: B, prepare: startMeeting,
+      tip: 'The tour starts the sample October meeting so you can see check-in and the ballots open.',
+      title: 'The platform counts quorum for you',
+      body: 'As members check in, the platform counts seated members and verified proxies and shows the moment you reach quorum, so the chair knows exactly when the committee can vote.' },
+    { main: true, route: 'governance/ballots', target: 'gov-ballot', role: B, prepare: startMeeting,
+      title: 'Vote by secret ballot or roll call',
+      body: 'Run a secret ballot, a roll call or a weighted vote right inside the meeting. Each member votes once, and results are measured against your bylaws’ threshold.' },
+    { main: false, route: 'governance/ballots', target: 'gov-receipt', role: B, prepare: startMeeting,
+      title: 'Every voter gets a receipt',
+      body: 'Each member gets a receipt confirming the vote was counted, while the choice itself stays private.' },
+    { main: false, route: 'governance/ballots', target: 'gov-results', role: B, prepare: startMeeting,
+      title: 'Results appear the moment voting closes',
+      body: 'Results appear as soon as the chair closes the ballot, measured against the threshold your bylaws require.' },
     { main: false, route: 'governance/proxies', target: 'gov-proxies', role: B,
-      title: 'Proxies, verified',
-      body: 'Members assign proxies ahead of time, and the secretary verifies each one before the meeting starts.',
-      notes: ['Verified proxies count toward quorum automatically.'] },
+      title: 'The secretary verifies every proxy',
+      body: 'Members assign proxies ahead of time, and the secretary verifies each one before the meeting starts.' },
     { main: false, route: 'governance/proxies', target: 'gov-audit', role: B,
-      title: 'An audit trail for every decision',
-      body: 'Every vote, proxy and change is recorded with a time stamp, so the committee can answer any question later.',
-      notes: ['Useful for credential challenges and party audits.'] },
+      title: 'Every decision leaves an audit trail',
+      body: 'Every vote and proxy is recorded with a time stamp, so the committee can answer questions later.' },
 
     /* ===== AI Campaign Director ===== */
     { chapter: 'AI Campaign Director', main: true, route: 'director', target: 'dir-request', role: B,
-      title: 'Ask for a whole campaign launch',
-      body: 'A board member describes what a candidate needs in plain words. The AI (Artificial Intelligence) Campaign Director turns that into a plan: website, emails, social posts, print pieces and events.',
-      notes: ['Press “Start the run” and let the screen work while you talk.',
-        'Every run is scripted for the demo, so it plays the same way each time.'],
-      action: { label: 'Start the run', run: () => { if (/running|waiting|finished/.test(dirStatus())) say('The Director is already working. Watch the next steps.', 'info'); else dirEnsureRunning(); } } },
-    { main: true, route: 'director', target: 'dir-agents', role: B, prepare: dirEnsureRunning,
-      title: 'Specialist assistants work side by side',
-      body: 'Separate assistants draft the website, the emails, the social posts and the print pieces at the same time. Work that would fill a volunteer team’s weekend is drafted while you watch.',
-      notes: ['Each card is one assistant with one job.',
-        'Drafts only: nothing is public yet.'] },
-    { main: true, route: 'director', target: 'dir-gate', role: B, waitText: 'The Director is checking the drafts…', prepare: dirEnsureRunning, wait: 20000,
-      ready: () => !!dirQ('[data-tour="dir-gate"] [data-act="fill-fppc"]') || /finished/.test(dirStatus()) || !!dirQ('[data-tour="dir-approval"] [data-act="approve"]'),
-      title: 'It checks the rules and asks when unsure',
-      body: 'Before anything goes public, the Director checks each piece: disclaimers, committee numbers, dates. When a legal detail is missing, it stops and asks a person instead of guessing.',
-      notes: ['This is the safeguard boards ask about most.',
-        'Missing FPPC (Fair Political Practices Commission) number? It pauses and asks.',
-        'When the gate asks, press the action button to supply the number from the filing.'],
-      action: { label: 'Supply the committee number', run: () => {
-        if (!dirSupplyNumber()) { dirEnsureRunning(); say('The number is already in place. The run continues.', 'info'); }
-      } } },
-    { main: true, route: 'director', target: 'dir-approval', role: B, waitText: 'The drafts are on their way to the board…', prepare: dirEnsureRunning, wait: 20000,
-      ready: () => !!dirQ('[data-tour="dir-approval"] [data-act="approve"]') || !!dirQ('[data-tour="dir-gate"] [data-act="fill-fppc"]') || /finished/.test(dirStatus()),
-      title: 'People approve every public step',
-      body: 'Every public step waits for a person on your committee to approve it. Review each draft, edit it and approve with one click. Your board stays in charge; the AI does the drafting.',
-      notes: ['Approve one item to show how quick it is.',
-        'Approvals are logged with a name and time.'],
-      action: { label: 'Approve', run: dirApproveOrUnblock } },
-    { main: true, route: 'director', target: 'dir-summary', role: B, waitText: 'Approving the remaining drafts and finishing the run…', wait: 30000,
-      prepare: () => { const sp = dirQ('[data-tour="dir-request"] [data-act="speed"]'); if (sp && sp.getAttribute('aria-pressed') !== 'true') sp.click(); },
-      ready: dirFastForward,
-      title: 'A plain-language summary at the end',
-      body: 'The run ends with a short summary: what was drafted, what was approved and what still needs a person. Your volunteers save hours, and your county stays in control.',
-      notes: ['Close on the theme: saves volunteers hours, county stays in control.',
-        'Then invite questions and use the chapter menu to jump back.'] },
+      title: 'Ask for a campaign plan',
+      body: 'A board member picks an endorsed candidate and chooses what the plan covers. The AI assistant drafts weekly goals to Election Day, a canvass target for every turf, print orders, social posts and events, all from your county’s own data.',
+      action: {
+        label: () => (dirHasPlan() ? 'Show the saved plan' : 'Draft a plan'),
+        run: () => { if (!dirDraftIfEmpty()) scrollTo('[data-tour="dir-summary"]'); },
+      } },
+    { main: true, route: 'director', target: 'dir-items', role: B, wait: 6000, waitText: 'The AI assistant is drafting the plan…',
+      prepare: dirDraftIfEmpty, ready: () => !!q('[data-tour="dir-items"] .dr-sec'),
+      pick: () => q('[data-tour="dir-items"] .dr-sec.is-fix') || q('[data-tour="dir-items"] .dr-sec'),
+      title: 'Every item gets a quality check',
+      body: 'Each draft item runs through plain checks, such as “Disclaimer present”, “Turf exists” or “Date is on or before Election Day”. Items that fail sit at the top and say why, and sections where everything passes fold into one row you can approve at once. The AI assistant never makes up a legal detail like an FPPC ID.' },
+    { main: true, route: 'director', target: 'dir-summary', role: B, wait: 6000,
+      prepare: dirDraftIfEmpty, ready: () => !!q('[data-tour="dir-summary"]'),
+      title: 'A person approves every item',
+      body: 'Board members approve, edit or reject each item. Every approval records the person’s name and the time, and an approved item links to the module that carries it out: Field Organizer, Campaign-in-a-Box or the Committee Portal.',
+      action: {
+        label: () => (q('[data-act="approve-ready"]') ? 'Approve the items that pass' : 'See the approval record'),
+        run: () => { const b = q('[data-act="approve-ready"]'); if (b) b.click(); else scrollTo('.dr-log, .dr-main .card:last-child'); },
+      } },
   ];
 
   // Carry chapter names forward so every step knows its chapter.
@@ -363,12 +284,9 @@ body.tour-modal .tour-spot{opacity:0}
 .tour-action{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;font:700 14.5px/1.2 var(--font-body);cursor:pointer;
   background:var(--accent,#C8102E);color:#fff;border:0;border-radius:9px;padding:9px 14px;box-shadow:0 2px 0 rgba(0,0,0,.18)}
 .tour-action:hover{filter:brightness(.92)}
-.tour-notes-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:2px 0;cursor:pointer;
-  font:600 13.5px/1.3 var(--font-body);color:var(--brand,#0B2A4A)}
-.tour-notes-btn svg{transition:transform .15s ease}
-.tour-notes-btn[aria-expanded="true"] svg{transform:rotate(90deg)}
-.tour-notes{margin:6px 0 8px;padding:10px 12px 10px 28px;background:#FFF8E6;border:1px solid #F1DFAE;border-radius:10px;color:#3E3418;font-size:14px}
-.tour-notes li{margin:2px 0}
+.tour-tip{margin:-4px 0 10px;font-size:13.5px;color:var(--ink-3,#5A6676)}
+.tour-card .tour-title,.tour-card .tour-body{animation:tour-in .28s ease both}
+@keyframes tour-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .tour-dots{display:flex;flex-wrap:wrap;gap:4px;padding:6px 18px 0}
 .tour-dot{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:var(--line-strong,#C3CAD4);cursor:pointer}
 .tour-dot.done{background:color-mix(in srgb,var(--brand,#0B2A4A) 45%,white)}
@@ -393,7 +311,7 @@ body.tour-modal .tour-card:not(.tour-sheet){left:auto!important;top:auto!importa
 .tour-card.tour-sheet::before{content:'';display:block;width:40px;height:4px;border-radius:2px;background:var(--line-strong,#C3CAD4);margin:6px auto 0}
 body.tour-on #toasts{z-index:2100}
 @media (max-width:719px){body.tour-on #toasts{bottom:calc(var(--tour-sheet-h,0px) + 12px)}}
-@media (prefers-reduced-motion:reduce){.tour-spot,.tour-card{transition:none}.tour-wait::before{animation:none}}
+@media (prefers-reduced-motion:reduce){.tour-spot,.tour-card{transition:none}.tour-wait::before{animation:none}.tour-card .tour-title,.tour-card .tour-body{animation:none}}
 `;
   function injectCss() {
     if (document.getElementById('tour-css')) return;
@@ -472,7 +390,6 @@ body.tour-on #toasts{z-index:2100}
   function renderCard(waiting) {
     const s = curStep;
     const n = list.length;
-    const notesOpen = !!(App.state.tour_notes);
     const label = s.action ? (typeof s.action.label === 'function' ? s.action.label() : s.action.label) : '';
     card.classList.remove('tour-end');
     card.innerHTML =
@@ -483,10 +400,7 @@ body.tour-on #toasts{z-index:2100}
       `<p class="tour-body">${esc(s.body)}</p>` +
       (waiting ? `<p class="tour-wait">${esc(s.waitText || 'Getting this part of the screen ready…')}</p>` : '') +
       (s.action ? `<button class="tour-action" data-t="action">${esc(label)}</button>` : '') +
-      (s.notes && s.notes.length
-        ? `<div><button class="tour-notes-btn" data-t="notes" aria-expanded="${notesOpen}">${ICON_CHEV}Presenter notes</button>` +
-          `<ul class="tour-notes"${notesOpen ? '' : ' hidden'}>${s.notes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`
-        : '') +
+      (s.tip ? `<p class="tour-tip">${esc(s.tip)}</p>` : '') +
       `</div>` +
       `<div class="tour-dots" role="group" aria-label="Tour progress">${list.map((x, k) =>
         `<button class="tour-dot${k === idx ? ' on' : k < idx ? ' done' : ''}" data-t="dot" data-i="${k}" aria-label="Step ${k + 1}: ${esc(x.title)}"${k === idx ? ' aria-current="step"' : ''}></button>`).join('')}</div>` +
@@ -502,8 +416,8 @@ body.tour-on #toasts{z-index:2100}
     card.innerHTML =
       `<div class="tour-head"><span class="tour-count">Tour complete</span><span class="tour-sp" style="flex:1"></span>` +
       `<button class="tour-x" data-t="close" aria-label="Close">${ICON_X}</button></div>` +
-      `<div class="tour-scroll"><h2 class="tour-title" id="tour-title">Now explore freely</h2>` +
-      `<p class="tour-body">Every screen is yours to click through. Switch committees or roles at the top, or jump back to any chapter when a question comes up.</p>` +
+      `<div class="tour-scroll"><h2 class="tour-title" id="tour-title">That’s the tour</h2>` +
+      `<p class="tour-body">Open any area from the menu. You can restart the tour or jump to a chapter from here. Closing the tour puts you back in the account you started with.</p>` +
       `${chapterSelect(-1)}</div>` +
       `<div class="tour-foot"><button class="tour-btn" data-t="restart">Restart tour</button><span class="tour-sp"></span>` +
       `<button class="tour-btn tour-primary" data-t="close">Close</button></div>`;
@@ -526,13 +440,7 @@ body.tour-on #toasts{z-index:2100}
     else if (t === 'close') finishClose();
     else if (t === 'restart') start(0);
     else if (t === 'dot') goTo(Number(b.dataset.i));
-    else if (t === 'notes') {
-      App.state.tour_notes = !App.state.tour_notes;
-      b.setAttribute('aria-expanded', String(!!App.state.tour_notes));
-      const ul = card.querySelector('.tour-notes');
-      if (ul) ul.hidden = !App.state.tour_notes;
-      place();
-    } else if (t === 'action' && curStep && curStep.action) {
+    else if (t === 'action' && curStep && curStep.action) {
       try { curStep.action.run(); } catch (err) { console.error('[Tour] action failed', err); }
       setTimeout(() => {
         if (!active || !curStep || !curStep.action) return;
@@ -620,12 +528,15 @@ body.tour-on #toasts{z-index:2100}
     if (r.top >= top && r.bottom <= bottom) return;
     let want = r.height <= avail ? top + (avail - r.height) / 2 : top;
     if (isPhone()) want = top; // keep it right under the header, above the sheet
-    window.scrollTo({ top: Math.max(0, window.scrollY + r.top - want), behavior: reduced() ? 'auto' : 'smooth' });
+    const dist = Math.abs(r.top - want);
+    window.scrollTo({ top: Math.max(0, window.scrollY + r.top - want), behavior: reduced() || dist > 1400 ? 'auto' : 'smooth' });
   }
 
   function resolveAndPlace() {
     if (!active || !curStep) { place(); return; }
-    const t = findTarget(curStep.target);
+    let t = null;
+    if (curStep.pick) { try { t = curStep.pick(); } catch (e) { t = null; } }
+    if (!t) t = findTarget(curStep.target);
     if (t !== target) target = t;
     place();
   }
@@ -659,7 +570,9 @@ body.tour-on #toasts{z-index:2100}
       if (my !== token) return;
       if (!want || routeKey() === want) {
         if (s.prepare && !s._prepared) { try { s.prepare(); } catch (e) { /* ignore */ } s._prepared = true; await sleep(260); }
-        found = findTarget(s.target);
+        found = null;
+        if (s.pick) { try { found = s.pick(); } catch (e) { found = null; } }
+        if (!found) found = findTarget(s.target);
         const isReady = !s.ready || (() => { try { return !!s.ready(); } catch (e) { return true; } })();
         if ((found || !s.target) && isReady) break;
         if (found && !isReady && !target) { target = found; place(); scrollToTarget(); place(); }
@@ -715,7 +628,10 @@ body.tour-on #toasts{z-index:2100}
   function start(i, opts) {
     if (!window.App) return;
     list = opts && opts.full ? ALL : MAIN;
-    if (!active) lastFocus = document.activeElement;
+    if (!active) {
+      lastFocus = document.activeElement;
+      if (startUser === undefined) { const u = App.auth && App.auth.user; startUser = u ? u.id : null; startTenant = App.state.tenant; }
+    }
     active = true;
     buildDom();
     bindGlobal();
@@ -729,13 +645,21 @@ body.tour-on #toasts{z-index:2100}
   }
   function back() { if (active && idx > 0) show(idx - 1); }
 
+  /* The tour signs in as sample accounts; put the person back where they started. */
+  let startUser = undefined, startTenant = null;
   function restoreDefaults() {
-    if (App.state.role !== 'board') App.setRole('board', true);
+    if (startUser === undefined) return;
+    try {
+      if (startTenant && App.state.tenant !== startTenant) App.setTenant(startTenant, true);
+      const now = App.auth && App.auth.user;
+      if (!startUser && now) App.auth.signOut({ silent: true });
+      else if (startUser && (!now || now.id !== startUser)) App.auth.signInAs(startUser, { silent: true });
+    } catch (e) { /* ignore */ }
+    startUser = undefined; startTenant = null;
   }
   function finish() {
     token++;
     if (curStep && curStep.cleanup) try { curStep.cleanup(); } catch (e) { /* ignore */ }
-    restoreDefaults();
     App.state.tour_step = 0;
     renderEnd();
   }
@@ -749,6 +673,7 @@ body.tour-on #toasts{z-index:2100}
     if (card) card.remove();
     document.body.classList.remove('tour-on');
     document.documentElement.style.removeProperty('--tour-sheet-h');
+    restoreDefaults();
     if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   }
   function exit() {
@@ -756,7 +681,7 @@ body.tour-on #toasts{z-index:2100}
     // Show the closing card so the presenter can restart or jump to a chapter.
     finish();
   }
-  function finishClose() { restoreDefaults(); teardown(); }
+  function finishClose() { teardown(); }
 
   window.Tour = {
     steps: MAIN,

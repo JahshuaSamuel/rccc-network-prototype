@@ -147,7 +147,7 @@
         id: cfg.slug + '-mtg-2026-10', title: 'October General Meeting', date: '2026-10-20', time: '7:00 PM', provider: 'Zoom',
         quorumRule: 'majority of seated members',
         agenda: [
-          'Call to order, roll call and quorum',
+          'Call to order and roll call',
           'Approve minutes of the September General Meeting',
           'Endorsement: ' + endorsee.name + ' (' + endorsee.office + ', ' + endorsee.district + ')',
           'Approve election-night budget',
@@ -176,7 +176,7 @@
     seed: 240117, slug: 'svgop', name: 'Santa Clara County Republican Party', shortName: 'SVGOP', domain: 'svgop.com',
     county: 'Santa Clara', region: 'bay-area',
     colors: { brand: '#0B2A4A', brandInk: '#FFFFFF', accent: '#C8102E' },
-    tagline: 'Silicon Valley Republicans — neighbors working for safe streets, good schools and a valley families can afford.',
+    tagline: 'Silicon Valley Republicans working for safe streets and a valley that families can afford.',
     exec: [
       ['Margaret Okafor-Lind', 'Chair', 'Assembly District 26'],
       ['Victor Castellanos', 'Vice Chair', 'Assembly District 28'],
@@ -216,12 +216,12 @@
     ],
     candidates: [
       { name: 'Elena Marsh', office: 'School Board Trustee', district: 'Trustee Area 3', status: 'ENDORSED',
-        slogan: 'Back to basics. Open books. Every child reading by third grade.',
+        slogan: 'Open books, and every child reading by third grade.',
         bio: 'Elena Marsh is a Sunnyvale mother of three and a former payroll manager who has volunteered in local classrooms for nine years. She led the parent committee that pushed the district to publish its budget line by line online.',
         issues: ['Reading and math proficiency first', 'Transparent, balanced district budgets', 'Parents as partners in curriculum decisions'],
         committeeName: 'Elena Marsh for School Board 2026', fppcId: '1467235', raisedUsd: 24800, goalUsd: 35000, subdomain: 'elenamarsh.svgop.com', siteStatus: 'LIVE', photo: 'images/photo-1.jpg', photoPos: '50% 22%' },
       { name: 'Raymond Kessler', office: 'City Council', district: 'District 6', status: 'ACTIVE_CAMPAIGN', missingDisclaimer: true,
-        slogan: 'Safe streets, filled potholes, a city hall that answers the phone.',
+        slogan: 'Safe streets and a city hall that answers the phone.',
         bio: 'Raymond Kessler is a San Jose small-business owner who has run a family auto repair shop for 18 years. He served on his neighborhood association board and organized a volunteer graffiti-removal crew that now covers 40 blocks.',
         issues: ['Fully staffed police and faster 911 response', 'Road repair before new pet projects', 'Faster permits for small businesses'],
         committeeName: 'Raymond Kessler for City Council 2026', fppcId: '1471862', raisedUsd: 71400, goalUsd: 90000, subdomain: 'raymondkessler.svgop.com', siteStatus: 'LIVE', photo: 'images/photo-2.jpg', photoPos: '50% 22%' },
@@ -278,8 +278,8 @@
       { id: 'svgop-vid-6', channel: 'SVGOP Live', title: 'Precinct captain training: walk lists on your phone', duration: '18:27', views: 1185, pushed: false }
     ],
     localAds: [
-      { id: 'svgop-ad-1', placement: 'SIDEBAR_TOP', title: 'Lincoln Day Dinner 2027 — sponsorships now open', sponsor: 'SVGOP Finance Committee', cta: 'Become a sponsor' },
-      { id: 'svgop-ad-2', placement: 'IN_FEED', title: 'Family-owned since 1987. Proud supporter of local volunteers.', sponsor: 'Copperline Hardware & Garden', cta: 'Visit the store' },
+      { id: 'svgop-ad-1', placement: 'SIDEBAR_TOP', title: 'Lincoln Day Dinner 2027: sponsorships now open', sponsor: 'SVGOP Finance Committee', cta: 'Become a sponsor' },
+      { id: 'svgop-ad-2', placement: 'IN_FEED', title: 'Family-owned since 1987 and proud to back local volunteers.', sponsor: 'Copperline Hardware & Garden', cta: 'Visit the store' },
       { id: 'svgop-ad-3', placement: 'FOOTER_BANNER', title: 'Candidate Forum: Water District and School Board races, Oct 22', sponsor: 'SVGOP Candidate Committee', cta: 'Reserve a seat' }
     ],
     events: [
@@ -297,7 +297,7 @@
     seed: 551903, slug: 'demo', name: 'Demo County Republican Party', shortName: 'Demo County GOP', domain: 'democountygop.org',
     county: 'Demo', region: 'central-valley',
     colors: { brand: '#14532D', brandInk: '#FFFFFF', accent: '#B7791F' },
-    tagline: 'Farm towns and main streets — Republicans organizing precinct by precinct across Demo County.',
+    tagline: 'Demo County Republicans organizing precinct by precinct, from farm towns to main streets.',
     exec: [
       ['Walter Hendricks', 'Chair', 'Assembly District 31'],
       ['Isabel Cardenas', 'Vice Chair', 'Assembly District 32'],
@@ -347,17 +347,17 @@
         issues: ['Faster business licensing and permits', 'Flood-control maintenance on schedule', 'Neighborhood policing and code enforcement'],
         committeeName: 'Luis Arredondo for City Council 2026', fppcId: '1479350', raisedUsd: 18900, goalUsd: 28000, subdomain: 'luisarredondo.democountygop.org', siteStatus: 'LIVE', photo: 'images/photo-2.jpg', photoPos: '50% 22%' },
       { name: 'Theodore Mensah', office: 'Water District Director', district: 'Division 1', status: 'FILED',
-        slogan: 'Water for farms, families and the future.',
+        slogan: 'Water our farms and families can count on.',
         bio: 'Theodore Mensah is an Oak Hollow almond grower and former irrigation district engineer. He has spent 20 years managing groundwater recharge and wants every farmer to see where their assessment dollars go.',
         issues: ['Groundwater recharge and new storage', 'Stable, predictable rates for growers', 'Online posting of every capital contract'],
         committeeName: 'Theodore Mensah for Water District 2026', fppcId: '1488627', raisedUsd: 9400, goalUsd: 22000, subdomain: 'theodoremensah.democountygop.org', siteStatus: 'BUILDING', photo: 'images/photo-5.jpg', photoPos: '56% 30%' },
       { name: 'Anjali Mehra', office: 'County Board of Education', district: 'Trustee Area 4', status: 'RECRUITED', electionDate: '2028-03-07',
-        slogan: 'Every student ready for work, college or service.',
+        slogan: 'Every student ready for a job or for college.',
         bio: 'Anjali Mehra is a Cedar Flats credit union branch manager and the first in her family to graduate from college. She mentors high school students through a financial literacy program she founded in 2019.',
         issues: ['Financial literacy in every high school', 'Accountability for county office spending', 'Expanded career technical education'],
         committeeName: 'Anjali Mehra for County Board of Education 2028', fppcId: '1505183', raisedUsd: 8000, goalUsd: 25000, subdomain: 'anjalimehra.democountygop.org', siteStatus: 'QUEUED', photo: 'images/photo-3.jpg', photoPos: '50% 24%' },
       { name: 'Mark Callaway', office: 'County Supervisor', district: 'District 3', status: 'ENDORSED',
-        slogan: 'Safe roads, steady budgets, open books.',
+        slogan: 'Safe roads and county books anyone can read.',
         bio: 'Mark Callaway owns a Millbrook construction supply business and has served two terms on the county planning commission. He coaches high school rugby and wants every county project posted online with its budget and timeline.',
         issues: ['Repair rural roads on a published schedule', 'Balanced budgets with a real rainy-day reserve', 'Faster permits for homes and small businesses'],
         committeeName: 'Mark Callaway for Supervisor 2026', fppcId: '1491736', raisedUsd: 52300, goalUsd: 85000, subdomain: 'markcallaway.democountygop.org', siteStatus: 'LIVE', photo: 'images/photo-4.jpg', photoPos: '56% 36%' }
@@ -399,8 +399,8 @@
       { id: 'demo-vid-6', channel: 'Demo County GOP Live', title: 'Yard sign drop-off: how to request and place a sign', duration: '4:48', views: 615, pushed: false }
     ],
     localAds: [
-      { id: 'demo-ad-1', placement: 'SIDEBAR_TOP', title: 'Lincoln Day Dinner 2027 — reserve your table', sponsor: 'Demo County GOP Finance Committee', cta: 'Become a sponsor' },
-      { id: 'demo-ad-2', placement: 'IN_FEED', title: 'Feed, seed and fencing for Demo County ranches since 1964.', sponsor: 'Hollister Gap Feed & Supply', cta: 'See weekly specials' },
+      { id: 'demo-ad-1', placement: 'SIDEBAR_TOP', title: 'Lincoln Day Dinner 2027: reserve your table', sponsor: 'Demo County GOP Finance Committee', cta: 'Become a sponsor' },
+      { id: 'demo-ad-2', placement: 'IN_FEED', title: 'Selling feed and fencing to Demo County ranches since 1964.', sponsor: 'Hollister Gap Feed & Supply', cta: 'See weekly specials' },
       { id: 'demo-ad-3', placement: 'FOOTER_BANNER', title: 'Candidate Forum: City Council and Water District races, Oct 21', sponsor: 'Demo County GOP Candidate Committee', cta: 'Reserve a seat' }
     ],
     events: [
@@ -457,9 +457,9 @@
   ];
 
   var network = {
-    name: 'Republican County Committee Network',
+    name: 'RCCC Network',
     illustrative: true,
-    note: 'Illustrative network data for demonstration. Counties other than SVGOP are shown for scale only.',
+    note: 'Figures for counties other than SVGOP and Demo County are samples.',
     kpis: kpis,
     weekly: weekly,
     states: [
@@ -490,12 +490,12 @@
       { id: 'p3', title: NATIONAL[0].title, kind: 'article', scope: 'ALL_ORGS', targetLabel: 'All counties, all states', priority: 90, locked: false, status: 'published', reach: 30900, hiddenBy: ['demo'], publishedMinutesAgo: 95 },
       { id: 'p4', title: 'Liberty Hour: Mail ballots 101 — return, track and confirm your vote', kind: 'video', scope: 'ALL_ORGS', targetLabel: 'All counties, all states', priority: 80, locked: false, status: 'published', reach: 18420, hiddenBy: [], publishedMinutesAgo: 1440 },
       { id: 'p5', title: 'Sign up to be an election-night poll observer', kind: 'cta', scope: 'REGION', targetLabel: 'Bay Area + Central Valley', priority: 95, locked: false, status: 'scheduled', reach: 0, hiddenBy: [], publishedMinutesAgo: null, scheduledFor: '2026-10-16 08:00' },
-      { id: 'p6', title: 'Thank you, volunteers: a final-week message from the network', kind: 'article', scope: 'SELECTED', targetLabel: 'SVGOP, Demo County GOP', priority: 70, locked: false, status: 'draft', reach: 0, hiddenBy: [], publishedMinutesAgo: null }
+      { id: 'p6', title: 'Thank you, volunteers: a final-week message from Master Network', kind: 'article', scope: 'SELECTED', targetLabel: 'SVGOP, Demo County GOP', priority: 70, locked: false, status: 'draft', reach: 0, hiddenBy: [], publishedMinutesAgo: null }
     ],
     masterAds: [
-      { id: 'ma-1', placement: 'HEADER_BANNER', title: 'Nationwide Volunteer Weekend — Oct 24–25', sponsor: 'Republican County Committee Network', cta: 'Pick a shift', fillRate: 0.94 },
-      { id: 'ma-2', placement: 'SIDEBAR_BOTTOM', title: 'Network Fundraising Drive: fuel the final 20 days', sponsor: 'Republican County Committee Network', cta: 'Chip in', fillRate: 0.88 },
-      { id: 'ma-3', placement: 'IN_FEED', title: 'National Sponsor — Ironbridge Mutual Insurance (fictional company)', sponsor: 'Ironbridge Mutual Insurance', cta: 'Learn more', fillRate: 0.71 }
+      { id: 'ma-1', placement: 'HEADER_BANNER', title: 'Nationwide Volunteer Weekend: Oct 24–25', sponsor: 'RCCC Network', cta: 'Pick a shift', fillRate: 0.94 },
+      { id: 'ma-2', placement: 'SIDEBAR_BOTTOM', title: 'Network Fundraising Drive: fuel the final 20 days', sponsor: 'RCCC Network', cta: 'Chip in', fillRate: 0.88 },
+      { id: 'ma-3', placement: 'IN_FEED', title: 'Ironbridge Mutual Insurance: coverage for California families', sponsor: 'Ironbridge Mutual Insurance', cta: 'Learn more', fillRate: 0.71 }
     ],
     sharedAssets: [
       { id: 'sa-1', title: 'Final-week door hanger: "Your ballot is in the mail"', kind: 'Door hanger', fromCounty: 'svgop', downloads: 412, forks: 9, updated: '2026-10-09' },
@@ -509,9 +509,9 @@
     ],
     channels: [
       { id: 'ch-1', name: 'Bay Area Chairs', type: 'REGIONAL', counties: ['svgop', 'san-mateo'], unread: 3, messages: [
-        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Our final-week door hanger is up in Shared Assets. Precincts that got it in 2024 returned ballots about 6 points faster.', minutesAgo: 410 },
+        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Our final-week door hanger is up in Shared files. Precincts that got it in 2024 returned ballots about 6 points faster.', minutesAgo: 410 },
         { from: 'Curtis Albrecht', county: 'san-mateo', text: 'Thanks! Can we swap the QR code to point at our ballot-tracking page instead of yours?', minutesAgo: 352 },
-        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Yes, fork it and the QR and footer update to your county automatically.', minutesAgo: 340 },
+        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Yes, copy it and the QR code and footer switch to your county.', minutesAgo: 340 },
         { from: 'Curtis Albrecht', county: 'san-mateo', text: 'Done. Printing 3,000 Thursday. Anyone splitting a print run to get the bulk rate?', minutesAgo: 95 },
         { from: 'Victor Castellanos', county: 'svgop', text: 'We are in for 5,000. I will send the print shop both files today.', minutesAgo: 40 }
       ] },
@@ -533,16 +533,34 @@
         { from: 'Walter Hendricks', county: 'demo', text: 'Margaret, how did you structure Lincoln Day Dinner sponsorship tiers last year?', minutesAgo: 2600 },
         { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Three tiers: $500 table host, $1,500 Lincoln, $5,000 Presidential. Presidential includes a reception for 10.', minutesAgo: 2540 },
         { from: 'Walter Hendricks', county: 'demo', text: 'Helpful. We will scale that down for our crowd and start at $300.', minutesAgo: 2480 },
-        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Want to co-host the election-night network simulcast? Your crowd on screen would be great.', minutesAgo: 75 },
+        { from: 'Margaret Okafor-Lind', county: 'svgop', text: 'Want to co-host the shared election-night livestream? Your crowd on screen would be great.', minutesAgo: 75 },
         { from: 'Walter Hendricks', county: 'demo', text: 'Absolutely. We will have a camera at Oak Hollow Lanes by 7:30.', minutesAgo: 50 }
       ] }
     ],
     jointEvents: [
       { id: 'je-1', title: 'Joint Precinct Captain Training', date: '2026-10-18', hosts: ['svgop', 'demo', 'placer'], location: 'Zoom', rsvps: 46 },
-      { id: 'je-2', title: 'Election Night Network Simulcast', date: '2026-11-03', hosts: ['svgop', 'demo'], location: 'San Jose and Oak Hollow, streamed live', rsvps: 267 },
+      { id: 'je-2', title: 'Election Night Livestream', date: '2026-11-03', hosts: ['svgop', 'demo'], location: 'San Jose and Oak Hollow, streamed live', rsvps: 267 },
       { id: 'je-3', title: 'Post-Election Debrief and 2028 Recruiting Summit', date: '2026-12-05', hosts: ['svgop', 'demo', 'san-mateo'], location: 'Harborline Conference Center, Redwood City', rsvps: 58 }
     ]
   };
 
-  window.DATA = { tenants: { svgop: svgop, demo: demo }, network: network };
+  // ---------- sample accounts ----------
+  // Seeded into Store.global by auth.js and listed under "Sample accounts" on the sign-in sheet.
+  // Emails use example.com and phones use the fictional 555-01xx range. The Master Network admin
+  // has tenant null: one account that works in every county.
+  function memberId(t, name) {
+    var m = t.members.filter(function (x) { return x.name === name; })[0];
+    return m ? m.id : null;
+  }
+  var sampleAccounts = [
+    { id: 'acct-svgop-supporter', name: 'Jordan Reyes', email: 'jordan.reyes@example.com', phone: '4085550142', zip: '95125', role: 'supporter', tenant: 'svgop', memberId: null },
+    { id: 'acct-svgop-member', name: 'Rosalind Achebe', email: 'rosalind.achebe@example.com', phone: '4085550117', zip: '95014', role: 'member', tenant: 'svgop', memberId: memberId(svgop, 'Rosalind Achebe'), title: 'Assembly District 23' },
+    { id: 'acct-svgop-board', name: 'Margaret Okafor-Lind', email: 'margaret.okaforlind@example.com', phone: '4085550101', zip: '95120', role: 'board', tenant: 'svgop', memberId: memberId(svgop, 'Margaret Okafor-Lind'), title: 'Chair' },
+    { id: 'acct-demo-supporter', name: 'Casey Lindqvist', email: 'casey.lindqvist@example.com', phone: '5595550163', zip: '93277', role: 'supporter', tenant: 'demo', memberId: null },
+    { id: 'acct-demo-member', name: 'Beverly Dawson', email: 'beverly.dawson@example.com', phone: '5595550128', zip: '93274', role: 'member', tenant: 'demo', memberId: memberId(demo, 'Beverly Dawson'), title: 'Assembly District 31' },
+    { id: 'acct-demo-board', name: 'Walter Hendricks', email: 'walter.hendricks@example.com', phone: '5595550104', zip: '93291', role: 'board', tenant: 'demo', memberId: memberId(demo, 'Walter Hendricks'), title: 'Chair' },
+    { id: 'acct-network-master', name: 'Dana Whitfield', email: 'dana.whitfield@example.com', phone: '9165550190', zip: '95814', role: 'master', tenant: null, memberId: null, title: 'Master Network' }
+  ];
+
+  window.DATA = { tenants: { svgop: svgop, demo: demo }, network: network, sampleAccounts: sampleAccounts };
 })();
