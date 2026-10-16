@@ -15,7 +15,7 @@
   /* Roles from least to most access. state.role follows the signed-in account (auth.js). */
   const ROLES = [
     { id: 'master', label: 'Master Network admin' },
-    { id: 'board', label: 'Executive board' },
+    { id: 'board', label: 'Executive Board' },
     { id: 'member', label: 'Committee member' },
     { id: 'supporter', label: 'Supporter' },
     { id: 'public', label: 'Public visitor' },

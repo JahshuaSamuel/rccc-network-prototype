@@ -492,6 +492,11 @@
   #cb-print-root[data-only="palm"] .cb-sheet:not([data-piece="palm"]),
   #cb-print-root[data-only="yard"] .cb-sheet:not([data-piece="yard"]) { display: none !important; }
 }
+@media (max-width: 640px), (pointer: coarse) {
+.scr-cand .cb-seg button, .scr-cand .cb-filter .chip, .scr-cand .cs-plats .chip, .scr-cand .cb-card-foot .btn, .scr-cand .cb-step { min-height: 44px; min-width: 44px; }
+.scr-cand .cb-card-open { min-height: 44px; display: inline-flex; align-items: center; }
+.scr-cand .cb-pv-bar .btn { min-height: 44px; min-width: 44px; }
+}
 `;
     const s = document.createElement('style');
     s.id = 'scr-cand-style';
@@ -1370,7 +1375,7 @@
       ${own.invites.length ? `<ul class="cb-vlist">${own.invites.slice().reverse().map((i) => { const b = INV_BADGE[i.status] || ['', i.status]; return `<li><span class="badge ${b[0]}">${b[1]}</span> ${esc(i.email || '')}${i.campaignRole === 'staff' ? ' · staff' : ''}<br><span class="small muted">Invited by ${esc(acctName(i.invitedBy) || 'the committee')}${i.createdAt ? ' · ' + esc(fmtStamp(i.createdAt)) : ''}</span>
         ${i.status === 'sent' ? `<div class="row" style="margin-top:6px"><button type="button" class="btn btn-sm" data-inv-copy="${esc(i.id)}">${IC.copy} Copy invite link</button><button type="button" class="btn btn-sm" data-inv-resend="${esc(i.id)}">Resend</button><button type="button" class="btn btn-ghost btn-sm" data-inv-revoke="${esc(i.id)}">Revoke</button></div>` : ''}</li>`; }).join('')}</ul>` : ''}
       ${own.owned || pendingOwner ? '' : st.key !== 'live' ? `<p class="small muted" style="margin:0">Publish the site first. Once it’s live you can hand it over to ${esc(f)}.</p>`
-        : !hasApi ? '<p class="small muted" style="margin:0">Candidate invites are coming online. Check back in a few minutes.</p>'
+        : !hasApi ? '<p class="small muted" style="margin:0">Candidate invites are not available yet. Reload this page to try again.</p>'
         : `<form class="stack" style="gap:10px" data-inv-form novalidate>
             <label class="cb-field"><span class="lbl">${esc(f)}’s email</span><input class="input" name="email" type="email" autocomplete="off" required></label>
             <label class="cb-field"><span class="lbl">${esc(f)}’s mobile number</span><input class="input" name="phone" type="tel" inputmode="tel" autocomplete="off" required></label>

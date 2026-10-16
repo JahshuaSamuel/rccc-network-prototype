@@ -295,7 +295,11 @@
     s.panel.querySelector('.sheet-body').scrollTop = 0;
     if (view.mount) view.mount(el);
     const auto = el.querySelector('[data-autofocus]') || el.querySelector('input,button');
-    if (auto) setTimeout(() => { try { auto.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, dir ? 200 : 60);
+    if (auto) {
+      const grab = () => { try { if (!el.contains(document.activeElement) || document.activeElement.tagName === 'BUTTON') auto.focus({ preventScroll: true }); } catch (e) { /* ignore */ } };
+      setTimeout(() => { try { auto.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, dir ? 200 : 60);
+      if (dir) { setTimeout(grab, 320); setTimeout(grab, 520); }
+    }
   }
 
   /* ---------------- form helpers ---------------- */

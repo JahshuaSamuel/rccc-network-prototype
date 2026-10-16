@@ -460,6 +460,11 @@
   .crm *, .crm-drawer, .crm-bulk, .crm-menu, .crm-ghost { animation:none !important; transition:none !important; }
   .crm .crm-kan { scroll-behavior:auto; }
 }
+@media (max-width: 640px), (pointer: coarse) {
+.crm .crm-fchip, .crm .crm-pathpill, .crm .crm-seg button, .crm .crm-rolepick button, .crm .crm-log-tabs button, .crm .crm-pf-quick .btn { min-height: 44px; min-width: 44px; }
+.crm .crm-task .b a, .crm .crm-kc .b a, .crm .crm-dl a { display: inline-flex; align-items: center; min-height: 44px; }
+.crm .crm-col-own .select { min-height: 44px; }
+}
 `;
     document.head.appendChild(s);
   }

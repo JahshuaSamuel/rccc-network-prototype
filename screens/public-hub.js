@@ -65,6 +65,9 @@
 .scr-prev .pv-loading.is-done { opacity:0; }
 .scr-prev .pv-caption { margin:12px 0 0; text-align:center; font-size:13.5px; color:var(--ink-3); }
 @media (max-width: 640px) { .scr-prev .pv-stage { padding:10px; border-radius:14px; } .scr-prev .pv-phone { border-radius:38px; padding:9px; } }
+@media (max-width: 640px), (pointer: coarse) {
+.scr-prev .pv-seg a, .scr-prev .pv-seg button, .scr-prev .pv-tools .btn { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+}
 `;
   function injectStyle() {
     if (document.getElementById('scr-prev-style')) return;
@@ -141,7 +144,7 @@
       <div class="pv-stage" data-tour="hub-preview">
         <div class="pv-host"></div>
       </div>
-      <p class="pv-caption">This is the real site, live. Changes saved in the Committee Portal or by Master Network show up here within a second.</p>
+      <p class="pv-caption">This is the real site, live. Changes saved in the Committee Portal or by Master Network show up here.</p>
     </div>`;
 
     const host = el.querySelector('.pv-host');

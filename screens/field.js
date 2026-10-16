@@ -715,7 +715,14 @@
   .scr-field .f-printsheet .ps-notes { width: 22%; }
   .scr-field .f-printsheet .ps-foot { margin-top: 8pt; font-size: 9pt; color: #444; }
   @page { margin: 12mm; }
-}`;
+}
+@media (max-width: 640px), (pointer: coarse) {
+.scr-field .f-seg button, .scr-field .f-grab { min-height: 44px; }
+.scr-field .leaflet-bar a, .scr-field .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+.scr-field .leaflet-control-attribution a { display: inline-block; padding: 15px 8px; margin: -15px -5px; }
+.scr-field .leaflet-marker-icon.f-stopicon { width: 44px !important; height: 44px !important; margin-left: -22px !important; margin-top: -22px !important; display: grid; place-items: center; }
+}
+`;
     document.head.appendChild(st);
   }
 

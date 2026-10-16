@@ -25,7 +25,7 @@
     const all = national.concat(state).sort((a, b) => (b.at || 0) - (a.at || 0));
     const N = window.NEWSROOM || {};
     const lead = all.find((n) => n.kind === 'push' && n.priority >= 90) || all.find((n) => n.id === N.breaking) || all.find((n) => n.tag !== 'Opinion') || all[0];
-    if (!lead) { el.innerHTML = '<section class="s-wrap s-empty-page"><h1>Headlines are loading</h1><p>The news feed fills in within a minute.</p></section>'; return { title: 'News' }; }
+    if (!lead) { el.innerHTML = '<section class="s-wrap s-empty-page"><h1>Headlines are loading</h1><p>Stories appear here as soon as the news feed loads.</p></section>'; return { title: 'News' }; }
     const used = new Set([lead.id]);
     const secondary = all.filter((n) => !used.has(n.id) && n.tag !== 'Opinion').slice(0, 4);
     secondary.forEach((n) => used.add(n.id));

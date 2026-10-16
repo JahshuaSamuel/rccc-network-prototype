@@ -64,6 +64,10 @@
 .scr-mc .mc-date { width: 54px; flex: none; text-align: center; border-radius: 10px; background: var(--mc-b); color: #fff; padding: 6px 0; line-height: 1.1; }
 .scr-mc .mc-date b { display: block; font: 800 1.35rem/1.05 var(--font-head); }
 .scr-mc .mc-date small { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+@media (max-width: 640px), (pointer: coarse) {
+.scr-cand .mc-line-site, .scr-mc .mc-line-site { display: inline-flex; align-items: center; min-height: 44px; }
+.scr-mc .chip, .scr-mc .cb-seg button, .scr-mc .btn-sm { min-height: 44px; min-width: 44px; }
+}
 `;
     document.head.appendChild(s);
   }
@@ -173,7 +177,7 @@
     }
     const vols = Store.list('volunteers').filter((v) => v.campaign === d.slug).slice().reverse();
     box.innerHTML = `<div class="card mc-coming"><div class="spinner" aria-hidden="true"></div><h3>${which === 'people' ? 'Your people list is coming online' : 'Your outreach tools are coming online'}</h3>
-      <p class="muted" style="max-width:52ch;margin:0 auto">${which === 'people' ? 'Every volunteer from your site will be in it, with notes, tags and follow-ups.' : 'You’ll send email and texts to your own lists from here.'} Check back in a few minutes.</p></div>
+      <p class="muted" style="max-width:52ch;margin:0 auto">${which === 'people' ? 'Every volunteer from your site will be in it, with notes, tags and follow-ups.' : 'You’ll send email and texts to your own lists from here.'} Reload this page to try again.</p></div>
       ${which === 'people' && vols.length ? `<div class="card cb-mt"><div class="card-head"><h3>Volunteers from your site</h3><span class="badge">${vols.length}</span></div><div class="card-body"><ul class="cb-vlist">${vols.map((v) => `<li><b>${esc(v.name)}</b> · ${esc(v.contact)}${v.zip ? ' · ' + esc(v.zip) : ''}<br><span class="small muted">${esc((v.interests || []).join(', ') || 'Any task')} · ${esc(K.fmtStamp(v.createdAt))}</span></li>`).join('')}</ul></div></div>` : ''}`;
   }
 

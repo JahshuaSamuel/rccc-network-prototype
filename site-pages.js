@@ -852,7 +852,7 @@
     return `<div class="s-done${fresh ? ' is-fresh' : ''}" role="status">
       <span class="s-done-mark">${ICON.check}</span>
       <h2>${fresh ? `Welcome, ${esc(first(doc.name))}.` : 'Your application is in'}</h2>
-      <p>${fresh ? 'We received your membership application.' : `You applied on ${esc(when)}, and it’s waiting for review.`} The membership secretary checks your voter registration and contacts you at ${esc(doc.contact)} within a week with a link to pay your ${util.fmtUsd(doc.amount || DUES)} dues and the date of your first meeting.</p>
+      <p>${fresh ? 'We received your membership application.' : `You applied on ${esc(when)}, and it’s waiting for review.`} The membership secretary checks your voter registration and will contact you at ${esc(doc.contact)} with a link to pay your ${util.fmtUsd(doc.amount || DUES)} dues and the date of your first meeting.</p>
       <div class="s-done-actions"><a class="s-btn s-btn-primary" href="#/events">See upcoming events</a><button class="s-btn s-btn-quiet" type="button" data-act="join-again">Apply for someone else</button></div>
     </div>`;
   }
@@ -898,7 +898,7 @@
       ${H.field({ name: 'name', label: 'Your name', autocomplete: 'name', value: me.name })}
       ${H.field({ name: 'contact', label: 'Email or mobile phone', autocomplete: 'email', value: me.contact, hint: 'WinRed sends your receipt here.' })}
       <button class="s-btn s-btn-accent s-btn-block s-don-go" type="submit">${donLabel(amt)}</button>
-      <p class="s-form-foot">Checkout opens WinRed, the secure contribution page, in a new tab. The WinRed address is a sample until the committee connects its account. WinRed asks for your address, occupation and employer, as campaign finance law requires.</p>
+      <p class="s-form-foot">Checkout opens WinRed, the contribution page, in a new tab. The WinRed address is a sample until the committee connects its account. WinRed asks for your address, occupation and employer, as campaign finance law requires.</p>
     </form>`;
   }
   function donLabel(amt) { return amt > 0 ? `Continue to checkout with ${util.fmtUsd(amt)}${dState.monthly ? ' a month' : ''}` : 'Continue to checkout'; }
@@ -957,7 +957,7 @@
         card.innerHTML = `<div class="s-done is-fresh" role="status">
           <span class="s-done-mark">${ICON.check}</span>
           <h2>Thank you, ${esc(first(doc.name))}. Finish on WinRed.</h2>
-          <p>We opened WinRed in a new tab with ${util.fmtUsd(amount)}${doc.recurring ? ' a month' : ''} filled in. Your gift is complete once you check out there, and WinRed emails your receipt right away.</p>
+          <p>We opened WinRed in a new tab with ${util.fmtUsd(amount)}${doc.recurring ? ' a month' : ''} filled in. Your gift is complete once you check out there, and WinRed sends your receipt.</p>
           <p class="s-note">We saved your pledge as ${esc(receipt)}.${win ? '' : ' Your browser blocked the new tab, so use the button below.'}</p>
           <div class="s-done-actions"><a class="s-btn s-btn-accent" href="${esc(url)}" target="_blank" rel="noopener">Open WinRed checkout ${ICON.out}</a><button class="s-btn s-btn-quiet" type="button" data-act="don-again">Make another gift</button></div>
         </div>`;

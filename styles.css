@@ -935,3 +935,9 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
   .claim-actions .btn { width: 100%; min-height: 48px; }
 }
 @media (prefers-reduced-motion: reduce) { .claim-card { animation: none; } }
+
+/* Touch targets on phones and coarse pointers */
+@media (max-width: 640px), (pointer: coarse) {
+  .wordmark { min-height: 44px; }
+  .switcher-select { min-height: 44px; }
+}

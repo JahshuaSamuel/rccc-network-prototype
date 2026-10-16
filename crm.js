@@ -1390,4 +1390,40 @@
     csv, csvCell, peopleCsv, download,
     util: { normEmail, normPhone, fmtPhone, kebab, splitName, isoDay, fmtWhen, fmtTime, daysSince },
   };
+
+  /* ---------------- access guard ----------------
+     Every read that returns records is checked against the signed-in user's owner here, at the API,
+     so a screen (or the console) can never pull another owner's records. Internal code (ingest, seed,
+     sends) uses the unwrapped functions above. */
+  (function guard() {
+    const C = App.crm;
+    const mayRead = (owner) => {
+      const u = App.auth && App.auth.user;
+      if (!u) return false;
+      owner = owner || 'committee';
+      if (u.role === 'candidate') return owner === 'campaign:' + u.campaignSlug;
+      if (u.role === 'board') return owner === 'committee' || isCampaign(owner);
+      if (u.role === 'member') return owner === 'committee';
+      return false;   // supporters and the Master Network never read CRM records
+    };
+    const byOwner = (name, empty) => { const f = C[name]; if (typeof f !== 'function') return; C[name] = function (owner) { return mayRead(owner) ? f.apply(this, arguments) : empty; }; };
+    const byDoc = (name, fetch, empty) => { const f = C[name]; if (typeof f !== 'function') return; C[name] = function () { const doc = fetch.apply(null, arguments); return doc && mayRead(ownerOf(doc)) ? f.apply(this, arguments) : empty; }; };
+    ['people', 'lists', 'paths', 'tasks', 'broadcasts', 'callCampaigns', 'petitions', 'team'].forEach((n) => byOwner(n, []));
+    byOwner('me', null);
+    byOwner('audience', { recipients: [], skipped: { optOut: [], noContact: [], quietHours: [], doNotContact: [] }, total: 0, quiet: { ok: true } });
+    ['person', 'getList', 'getPath', 'getEntry', 'getCallCampaign'].forEach((n) => { const f = C[n]; C[n] = function () { const r = f.apply(this, arguments); return r && mayRead(ownerOf(r)) ? r : null; }; });
+    const personDoc = (id, slug) => list('people', slug).find((p) => p.id === id);
+    byDoc('timeline', personDoc, []);
+    byDoc('duplicatesOf', personDoc, []);
+    byDoc('entriesFor', personDoc, []);
+    byDoc('runList', (id, slug) => getList(id, slug), []);
+    byDoc('pathEntries', (id, slug) => getPath(id, slug), []);
+    byDoc('pathSuggestions', (id, slug) => getPath(id, slug), []);
+    byDoc('callQueue', (id, slug) => getCallCampaign(id, slug), []);
+    byDoc('callProgress', (id, slug) => getCallCampaign(id, slug), null);
+    byDoc('callsFor', (id, slug) => getCallCampaign(id, slug), []);
+    byDoc('signatures', (id, slug) => getPetition(id, slug), []);
+    const stats0 = C.stats; C.stats = function () { const r = App.auth && App.auth.role; return r === 'master' || r === 'board' || r === 'member' ? stats0.apply(this, arguments) : null; };
+    const shares0 = C.shares; C.shares = function () { return mayRead('committee') && perms.share() ? shares0.apply(this, arguments) : []; };
+  })();
 })();

@@ -318,7 +318,13 @@
   .scr-master .mn-line { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
   .scr-master .mn-area { opacity:1; animation:none; }
   .scr-master .mn-bar-fill { transition:none; transform: scaleX(1); }
-}`;
+}
+@media (max-width: 640px), (pointer: coarse) {
+.scr-master .mn-range { min-height: 44px; }
+.scr-master .mn-switch { min-height: 44px; }
+.scr-master .mn-switch input[type="checkbox"] { min-width: 24px; min-height: 24px; }
+}
+`;
     document.head.appendChild(s);
   }
 

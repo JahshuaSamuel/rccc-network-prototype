@@ -438,7 +438,11 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .scr-gov .is-new, .scr-gov .gov-pop, .scr-gov .gov-bar-fill { animation:none; }
-}`;
+}
+@media (max-width: 640px), (pointer: coarse) {
+.scr-gov .chip, .scr-gov .gov-agenda .chip { min-height: 44px !important; }
+}
+`;
     document.head.appendChild(s);
   }
 

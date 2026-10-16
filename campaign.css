@@ -238,3 +238,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 76px; }
 @media (min-width: 1200px) {
   .cs-hero h1 { font-size: 6.6rem; }
 }
+
+@media (max-width: 640px), (pointer: coarse) {
+  .cs-nav-name { display: inline-flex; align-items: center; min-height: 44px; }
+}

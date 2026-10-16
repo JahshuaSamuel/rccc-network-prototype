@@ -77,14 +77,14 @@
       } },
     { main: true, route: 'overview', target: 'role-switcher', role: B, tenant: 'svgop',
       title: 'Everyone sees what fits their job',
-      body: 'Your account decides what you see. A supporter sees the public site, a committee member also sees walk lists and ballots, Executive Board members get the controls, and Master Network admins see every county. Sign-in sends a 6-digit code to your email or phone.',
+      body: 'Your account decides what you see. A supporter sees the public site, a committee member also sees walk lists and ballots, Executive Board members get the controls, and Master Network admins see every county. Sign-in uses a 6-digit code, which appears on screen until email and text delivery are connected.',
       tip: 'The account menu lists the sample accounts, so you can sign in as each role in one click.',
       pick: () => { const m = q('.acct-menu'); return m && !m.hidden && m.offsetParent ? m : null; },
       action: { label: 'Open the account menu', run: () => { const b = q('.acct-btn'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); } },
       cleanup: () => { const b = q('.acct-btn'); if (b && b.getAttribute('aria-expanded') === 'true') b.click(); } },
     { main: true, route: 'overview', target: 'overview-shortcuts', role: B, tenant: 'svgop',
       title: 'Your shortcuts, with today’s numbers',
-      body: 'After you sign in, the overview greets you by name and shows the jobs that fit your account: for the board chair, campaign plans waiting for approval, doors left to knock and open ballots.' },
+      body: 'After you sign in, the overview greets you by name and shows the jobs that fit your account: for the board chair, campaign plans waiting for approval and open ballots.' },
     { main: false, route: 'overview', target: 'nav', role: B,
       prepare: () => { if (window.innerWidth <= 900) document.body.classList.add('drawer-open'); },
       cleanup: () => { document.body.classList.remove('drawer-open'); },
@@ -189,7 +189,7 @@
       title: 'Voter data stays in your county',
       body: 'Voter files live inside your county’s own space. Volunteers see only the addresses on their own walk list, and the county decides who sees more.' },
     { main: false, route: 'field/list', target: 'field-build', role: B,
-      title: 'Build a walk list in seconds',
+      title: 'Build a walk list from a turf',
       body: 'Pick a turf and filters, and the platform builds a walk list in a sensible walking order, ready to assign.' },
     { main: true, route: 'field/canvass', target: 'field-phone', role: B,
       title: 'Canvassing from any phone',
@@ -199,29 +199,29 @@
       body: 'Doors recorded with weak signal are saved on the phone and send once it reconnects.' },
 
     /* ===== People & Outreach ===== */
-    { chapter: 'People & Outreach', main: true, route: 'people', role: B, sel: '#main .crm-t, #main .crm-nav',
+    { chapter: 'People & Outreach', main: true, route: 'people', role: B, target: 'people-table', sel: '#main .crm-t, #main .crm-nav',
       title: 'Everyone your committee knows, on one list',
       body: 'Every RSVP, volunteer sign-up, donation and door knocked on your public site lands here as a person, with support level, roles and the volunteer who looks after them. Search, filter and save lists for outreach.' },
     { main: true, role: B, route: () => { let id = ''; try { const p = App.crm.people('committee')[0]; id = p ? p.id : ''; } catch (e) { /* ignore */ } return id ? 'people/' + id : 'people'; },
-      sel: '.crm-pf, #main .crm-t', wait: 3000,
+      target: 'people-profile', sel: '.crm-pf, #main .crm-t', wait: 3000,
       title: 'One profile per person',
       body: 'A profile shows everything that person has done with the committee, from events and shifts to calls and gifts, plus their follow-ups. Contact preferences and “do not contact” are respected everywhere.' },
-    { main: true, route: 'people/paths', role: B, wait: 3000,
+    { main: true, route: 'people/paths', role: B, target: 'people-paths', wait: 3000,
       pick: () => { const c = document.querySelector('#main .crm-col'); return c && visible(c) ? c.parentElement : null; },
       title: 'Move volunteers along a path',
       body: 'Paths are boards for steps like a new volunteer’s welcome call, first shift and team lead talk. Drag a person to the next step, and the platform suggests who is ready based on their shifts and walks.' },
-    { main: true, route: 'outreach/compose', role: B, sel: '#main .oc-side, #main .oc-form', wait: 3000,
+    { main: true, route: 'outreach/compose', role: B, target: 'outreach-compose', sel: '#main .oc-side, #main .oc-form', wait: 3000,
       title: 'Email or text a list, the legal way',
       body: 'Write once to a saved list. Before you send, it shows exactly who gets it and who is skipped: people who opted out, have no address on file or are marked do not contact. The “Paid for by” line and the opt-out footer are added for you.' },
-    { main: true, route: 'outreach/calls', role: B, wait: 3000,
+    { main: true, route: 'outreach/calls', role: B, target: 'outreach-calls', wait: 3000,
       pick: () => { const a = document.querySelector('#main a[href^="#/outreach/calls/cc-"]'); const c = a && (a.closest('.card') || a.closest('article') || a.parentElement); return c && visible(c) ? c : null; },
       title: 'Run a phone bank from any browser',
       body: 'A call campaign hands each volunteer the next person to call with a script and survey. Every call is logged on the person’s profile, and Master Network sees only the totals.' },
-    { main: true, route: 'mycampaign', role: 'candidate', sel: '#main .mc-hero, #main h1', wait: 3000,
+    { main: true, route: 'mycampaign', role: 'candidate', target: 'mycampaign-overview', sel: '#main .mc-hero, #main h1', wait: 3000,
       tip: 'The tour signs in as a sample candidate for these two steps, then switches back.',
       title: 'Candidates get their own campaign home',
       body: 'When the board endorses a candidate, the candidate signs in to My Campaign: their site, their supporters, outreach, print and social posts. The campaign’s list is its own, separate from the committee’s.' },
-    { main: true, route: 'mycampaign', role: 'candidate', sel: '#mc-suggestions, #main .mc-todo', wait: 3000,
+    { main: true, route: 'mycampaign', role: 'candidate', target: 'mycampaign-suggestions', sel: '#mc-suggestions, #main .mc-todo', wait: 3000,
       title: 'The committee suggests, the candidate decides',
       body: 'Board members can suggest changes to a candidate’s site or propose events. Suggestions wait here, and the candidate accepts or declines each one.' },
 
@@ -276,6 +276,10 @@
   ALL.forEach((s) => {
     if (s.sel && !s.pick) s.pick = () => { for (const el of document.querySelectorAll(s.sel)) { if (visible(el)) return el; } return null; };
     if (!s.target) s.target = 'none';
+  });
+  // The People, Outreach and My Campaign steps prefer their data-tour element and fall back to the selector.
+  ALL.forEach((s) => {
+    if (/^(people|outreach|mycampaign)-/.test(s.target) && s.pick) { const fallback = s.pick; s.pick = () => findTarget(s.target) || fallback(); }
   });
 
   // Carry chapter names forward so every step knows its chapter.
@@ -342,6 +346,8 @@ body.tour-modal .tour-card:not(.tour-sheet){left:auto!important;top:auto!importa
 .tour-card.tour-sheet .tour-scroll{padding-top:4px}
 .tour-card.tour-sheet .tour-foot{padding-bottom:12px}
 .tour-card.tour-sheet::before{content:'';display:block;width:40px;height:4px;border-radius:2px;background:var(--line-strong,#C3CAD4);margin:6px auto 0}
+.tour-card.tour-sheet.tour-top{top:0!important;bottom:auto;border-radius:0 0 16px 16px;border-top:0;border-bottom:5px solid var(--accent,#C8102E);padding-bottom:0}
+.tour-card.tour-sheet.tour-top::before{display:none}
 body.tour-on #toasts{z-index:2100}
 @media (max-width:719px){body.tour-on #toasts{bottom:calc(var(--tour-sheet-h,0px) + 12px)}}
 @media (prefers-reduced-motion:reduce){.tour-spot,.tour-card{transition:none}.tour-wait::before{animation:none}.tour-card .tour-title,.tour-card .tour-body{animation:none}}
@@ -503,6 +509,22 @@ body.tour-on #toasts{z-index:2100}
     return { top, left, bottom, right, width: right - left, height: bottom - top };
   }
 
+  /* When a target is too big to leave room for the card, shrink the highlight to the part the card does not cover. */
+  function clipSpot(sr, cx, cy, cw, ch) {
+    if (!sr || cx + cw <= sr.left || cx >= sr.right || cy + ch <= sr.top || cy >= sr.bottom) return;
+    const G = 8;
+    const opts = [
+      { left: Math.max(sr.left, cx + cw + G), top: sr.top, right: sr.right, bottom: sr.bottom },
+      { left: sr.left, top: sr.top, right: Math.min(sr.right, cx - G), bottom: sr.bottom },
+      { left: sr.left, top: Math.max(sr.top, cy + ch + G), right: sr.right, bottom: sr.bottom },
+      { left: sr.left, top: sr.top, right: sr.right, bottom: Math.min(sr.bottom, cy - G) },
+    ].filter((o) => o.right - o.left >= 60 && o.bottom - o.top >= 60);
+    if (!opts.length) return;
+    opts.sort((a, b) => (b.right - b.left) * (b.bottom - b.top) - (a.right - a.left) * (a.bottom - a.top));
+    const o = opts[0];
+    Object.assign(spot.style, { top: o.top + 'px', left: o.left + 'px', width: (o.right - o.left) + 'px', height: (o.bottom - o.top) + 'px' });
+  }
+
   function place() {
     if (!card) return;
     const phone = isPhone();
@@ -515,7 +537,19 @@ body.tour-on #toasts{z-index:2100}
     if (phone) {
       card.classList.remove('tour-center');
       card.style.left = ''; card.style.top = '';
-      document.documentElement.style.setProperty('--tour-sheet-h', card.offsetHeight + 'px');
+      // Dock to the bottom or the top edge, whichever side the highlighted target is not on.
+      const h = card.offsetHeight, vh = window.innerHeight;
+      let side = card._side || 'bottom';
+      if (sr) {
+        const ovBottom = Math.max(0, sr.bottom - (vh - h));
+        const ovTop = Math.max(0, h - sr.top);
+        if (side === 'bottom' && ovBottom > 0 && ovTop < ovBottom) side = 'top';
+        else if (side === 'top' && ovTop > 0 && ovBottom < ovTop) side = 'bottom';
+      }
+      card._side = side;
+      card.classList.toggle('tour-top', side === 'top');
+      document.documentElement.style.setProperty('--tour-sheet-h', side === 'top' ? '0px' : h + 'px');
+      if (sr) clipSpot(sr, 0, side === 'top' ? 0 : vh - h, window.innerWidth, h);
       return;
     }
     if (noSpot) { card.classList.add('tour-center'); card.style.left = ''; card.style.top = ''; return; }
@@ -535,10 +569,21 @@ body.tour-on #toasts{z-index:2100}
     else if (fits.left) { x = sr.left - GAP - cw; y = clampY(sr.top); }
     else if (fits.bottom) { x = clampX(sr.left); y = sr.bottom + GAP; }
     else if (fits.top) { x = clampX(sr.left); y = sr.top - GAP - chh; }
-    else if (vh - sr.bottom > sr.top) { x = clampX(sr.right - cw); y = clampY(sr.bottom + GAP); } // best effort, below
-    else { x = clampX(sr.right - cw); y = clampY(sr.top - GAP - chh); }
+    else {
+      // Nothing fits cleanly: try the corners and the sides and keep the spot that covers the least of the target.
+      const tb = topbarBottom() + M;
+      const cands = [
+        [vw - cw - M, vh - chh - M], [M, vh - chh - M], [vw - cw - M, tb], [M, tb],
+        [clampX(sr.right - cw), clampY(sr.bottom + GAP)], [clampX(sr.right - cw), clampY(sr.top - GAP - chh)],
+      ];
+      const area = (cx, cy) => Math.max(0, Math.min(cx + cw, sr.right) - Math.max(cx, sr.left)) * Math.max(0, Math.min(cy + chh, sr.bottom) - Math.max(cy, sr.top));
+      let best = cands[0], bestA = Infinity;
+      cands.forEach((c) => { const a = area(c[0], c[1]); if (a < bestA - 1) { bestA = a; best = c; } });
+      x = best[0]; y = best[1];
+    }
     card.style.left = Math.round(x) + 'px';
     card.style.top = Math.round(y) + 'px';
+    clipSpot(sr, x, y, cw, chh);
   }
 
   function scrollToTarget() {
@@ -583,6 +628,7 @@ body.tour-on #toasts{z-index:2100}
     curStep = list[i];
     App.state.tour_step = i;
     target = null;
+    if (card) card._side = 'bottom';
     const s = curStep;
 
     // Role / tenant first (silently), then route.

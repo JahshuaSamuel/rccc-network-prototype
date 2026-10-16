@@ -817,3 +817,20 @@ body.s-body { background: var(--s-paper); color: var(--s-ink); font-size: 16.5px
 .s-body .s-camp-tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 10%, white); color: var(--brand); font: 700 10.5px/1.6 var(--font-body); letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
 .s-body .s-camp-tag:hover { background: var(--brand); color: var(--brand-ink); }
 .s-body .s-eyebrow-light .s-camp-tag { background: rgba(255,255,255,.16); color: #fff; }
+
+/* Touch targets: phones and coarse pointers get 44px controls. Desktop is unchanged. */
+@media (max-width: 640px), (pointer: coarse) {
+  .s-body.s-body :is(.s-btn-sm, .s-tab, .s-brand, .s-cmte-join, .s-footer-col a, .s-more-link, .s-sec-link, .vg-tab, .vg-btn, .vg-bar .vg-btn, .nr-chan, .s-alert-text) { min-height: 44px; }
+  .s-body.s-body :is(.s-erow-title, .s-cmte-title, .nr-hl, .s-brand, .s-alert-text, .s-footer-col a, .vg-tab) { display: flex; align-items: center; }
+  .s-body.s-body :is(.s-more-link, .s-sec-link) { display: inline-flex; align-items: center; }
+  .s-body.s-body :is(.s-step, .vg-icon-btn) { min-width: 44px; width: 44px; height: 44px; padding: 0; }
+  .s-body.s-body .s-brand { padding-block: 2px; }
+  .s-body.s-body .s-alert-text { display: inline-flex; }
+  .s-body.s-body :is(.s-widget-head a, .s-ecard-title a, .s-map-note a, .s-form-foot a, .vg-source, .nr-ticker-track a, .s-erow-title, .s-cmte-title, .nr-hl) { min-height: 44px; display: flex; align-items: center; }
+  .s-body.s-body :is(.s-ecard-title a, .s-form-foot a) { display: inline-flex; }
+  .s-body.s-body .s-widget-head a { min-width: 44px; justify-content: center; }
+  .s-body.s-body .vg-search { min-height: 46px; }
+  .s-body.s-body .vg-search input { min-height: 44px; padding: 0; }
+  .s-body .leaflet-bar a, .s-body .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+  .s-body .leaflet-control-attribution a { display: inline-block; padding: 15px 8px; margin: -15px -5px; }
+}

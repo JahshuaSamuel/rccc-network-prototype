@@ -251,9 +251,10 @@
     } catch (e) { return null; }
   }
   function campaignNums(ctx) {
-    const out = { people: 0, todo: 0 };
+    const out = { people: 0, todo: 0, slug: '' };
     const c = App.auth && App.auth.campaign ? App.auth.campaign() : null;
     const slug = (c && c.slug) || (ctx.user && ctx.user.campaignSlug);
+    out.slug = slug || '';
     try { if (slug && App.crm) out.people = App.crm.people('campaign:' + slug).length; } catch (e) { /* ignore */ }
     try { out.todo = Store.list('siteSuggestions').filter((x) => (x.slug === slug || x.campaignSlug === slug) && (!x.status || x.status === 'pending')).length; } catch (e) { /* ignore */ }
     return out;
@@ -353,7 +354,12 @@
       const short = t.shortName || t.name || '';
       const stars = `<svg class="ov2-stars" viewBox="0 0 100 100" aria-hidden="true">${STAR(50, 52, 48, 'currentColor')}</svg>`;
       const num = (v, label) => `<div class="ov2-num"><b data-count="${v}">${U.fmtNum(v)}</b><span>${label}</span></div>`;
-      const strip = `<div class="ov2-nums">
+      const cNums = ctx.role === 'candidate' ? (() => { const cm = campaignNums(ctx); const sl = cm.slug; let vv = 0; try { vv = Store.list('volunteers').filter((v) => v.campaign === sl).length; } catch (e) { /* ignore */ } return { people: cm.people, vols: vv }; })() : null;
+      const strip = cNums ? `<div class="ov2-nums">
+          ${num(daysLeft(), 'days to Election Day, Nov 3')}
+          ${num(cNums.people, 'supporters on your campaign list')}
+          ${num(cNums.vols, 'volunteers from your campaign site')}
+        </div>` : `<div class="ov2-nums">
           ${num(daysLeft(), 'days to Election Day, Nov 3')}
           ${num(n.rsvps, `RSVPs to ${short} events`)}
           ${num(n.volunteers, `${short} volunteers`)}

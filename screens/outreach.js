@@ -179,6 +179,10 @@
   .crm .pc-foot { margin:0; }
   .crm .pc-who h2 { font-size:1.35rem; }
 }
+@media (max-width: 640px), (pointer: coarse) {
+.crm .oc-merge button { min-height: 44px; min-width: 44px; }
+.crm .oc-when label { min-height: 44px; }
+}
 `;
     document.head.appendChild(s);
   }
