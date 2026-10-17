@@ -384,7 +384,7 @@
           { ic: IC.star, h: 'Executive Board', p: 'Post county news, recruit candidates and launch their campaign sites, plan campaigns with the AI assistant and run meetings.' },
           { ic: IC.net, h: 'Master Network staff', p: 'Send state and national news and statewide alerts to county sites, run network ads and compare how every county is doing.', m: true },
         ];
-        body = `<section class="ov2-sec"><h2>Who it’s for</h2><p class="ov2-sub">Everyone signs in with an email or phone number and a 6-digit code. Your account decides what you can open.</p>
+        body = `<section class="ov2-sec"><h2>Who it’s for</h2><p class="ov2-sub">Everyone signs in with ${App.auth && App.auth.backend === 'supabase' && App.auth.phoneMode !== 'twilio' ? 'their email' : 'an email or phone number'} and a 6-digit code. Your account decides what you can open.</p>
           <div class="ov2-who">${who.map((w, i) => `<div style="--i:${i}"><span class="ov2-tag${w.m ? ' is-master' : ''}">${w.ic}</span><h3>${w.h}</h3><p>${w.p}</p></div>`).join('')}</div></section>`;
       } else {
         const first = String(u.name || '').split(/\s+/)[0];

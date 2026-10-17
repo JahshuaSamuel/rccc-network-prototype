@@ -59,10 +59,14 @@
   <div id="toasts" role="region" aria-label="Notifications" aria-live="polite" aria-relevant="additions"></div>
 
   <!-- Script order per contract. A missing file 404s and simply registers nothing. -->
+  <script src="config.js"></script>
   <script src="data.js"></script>
   <script src="store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="store-supabase.js"></script>
   <script src="core.js"></script>
   <script src="auth.js"></script>
+  <script src="auth-supabase.js"></script>
   <script src="crm.js"></script>
   <script src="voter-guide-data.js"></script>
   <script src="voter-guide.js"></script>

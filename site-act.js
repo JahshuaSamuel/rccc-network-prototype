@@ -15,7 +15,8 @@
   const bySlug = (slug) => all().find((p) => p.slug === slug && (p.status === 'live' || p.status === 'closed')) || null;
   const sigs = (p) => Store.list('signatures').filter((x) => x && x.petitionId === p.id);
   const base = (p) => Number(p.seedCount ?? p.baseCount ?? p.signatureCount ?? p.count ?? 0) || 0;
-  const count = (p) => base(p) + sigs(p).length;
+  /* Supabase backend: totals come from Store.count (public_counts), numbers only (R4). */
+  const count = (p) => base(p) + (typeof Store.count === 'function' ? Number(Store.count('signatures', 'petitionId')[p.id]) || 0 : sigs(p).length);
   const mine = (p) => sigs(p).filter(S.isMine).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0] || null;
   const isSurvey = (p) => p.kind === 'survey';
   const qs = (p) => (Array.isArray(p.questions) ? p.questions : []).filter((q) => q && q.text && Array.isArray(q.options) && q.options.length);

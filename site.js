@@ -419,9 +419,11 @@
     const savedIds = new Set(saved.map((e) => String(e.id)));
     const seed = (T.events || []).filter((e) => !savedIds.has(String(e.id))).map((e) => Object.assign({ sample: true }, e));
     const rsvps = Store.list('rsvps');
+    /* Supabase backend: head counts come from Store.count (public_counts), numbers only (R4). */
+    const heads = typeof Store.count === 'function' ? Store.count('rsvps', 'eventId') : null;
     let list = seed.concat(saved.filter((e) => (e.status || 'published') === 'published')).map((e) => {
       const mine = rsvps.filter((r) => r && r.eventId === e.id);
-      const extra = mine.reduce((a, r) => a + 1 + (Number(r.guests) || 0), 0);
+      const extra = heads ? Number(heads[e.id]) || 0 : mine.reduce((a, r) => a + 1 + (Number(r.guests) || 0), 0);
       const going = (Number(e.rsvps) || 0) + extra;
       const ll = coordsFor(e);
       return Object.assign({}, e, {
@@ -1022,7 +1024,22 @@
 
     window.addEventListener('hashchange', () => { if (menuOpen) setMenu(false); render(); });
     watch();
-    render({ focus: false });
+    /* Supabase backend: keep the loading spinner until the first data load (Store.ready) so lists
+       never paint empty, then redraw when a county finishes loading. The timer is a backstop. */
+    const ready = Store.ready;
+    if (ready && typeof ready.then === 'function') {
+      let first = false;
+      const paint = () => {
+        if (first) return;
+        first = true;
+        readSession(); renderAlert(); renderHeader(); renderMenu(); renderFooter();
+        render({ focus: false });
+        Store.on('hydrated', () => liveRefresh());
+        Store.global.on('hydrated', () => liveRefresh());
+      };
+      Promise.resolve(ready).then(paint, paint);
+      setTimeout(paint, 9000);
+    } else render({ focus: false });
   }
 
   window.Site = {

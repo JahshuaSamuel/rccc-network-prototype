@@ -43,6 +43,8 @@
     if (/expired|invalid.*otp|token has expired|otp_expired/i.test(m)) return 'That code doesn\'t match or has expired.';
     if (/rate limit|too many|security purposes|seconds/i.test(m)) return 'Please wait a minute before asking for another code.';
     if (/signups not allowed|user not found|otp_disabled/i.test(m)) return 'NOT_FOUND';
+    if (/not authorized/i.test(m)) return 'Sign-in email isn\'t connected yet, so codes can\'t go to this address. Try again later, or ask the committee for help.';
+    if (/email address .* is invalid|email_address_invalid/i.test(m)) return 'We can\'t send a code to that email address. Check it, or use another one.';
     if (/fetch|network/i.test(m)) return 'We couldn\'t reach the server. Check your connection and try again.';
     return m.replace(/^.*?:\s*/, '') || 'Something went wrong. Try again.';
   }
@@ -78,6 +80,7 @@
     out: svg('<path d="M8 4H5a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 5 16h3"/><path d="M12.5 13.5L16 10l-3.5-3.5M16 10H8"/>', 18),
     mail: svg('<rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="M3.5 5.5l6.5 5 6.5-5"/>', 22),
     phone: svg('<rect x="6" y="2" width="8" height="16" rx="2"/><path d="M9 15h2"/>', 22),
+    trash: svg('<path d="M4 6h12M8 6V4.5h4V6M6 6l.8 10h6.4L14 6"/>', 18),
   };
 
   /* ---------------- the sheet (same markup and classes as auth.js) ---------------- */
@@ -341,7 +344,7 @@
         field('si-id', label, `type="${PHONE_MODE === 'twilio' ? 'text' : 'email'}" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(prefill || '')}" data-autofocus`) +
         `<button class="btn btn-primary btn-block" type="submit">Send code</button></form>` +
         `<p class="sheet-switch">New to ${esc(tenantShort())}? <button type="button" class="link-btn" data-go="signup">Create an account</button></p>` +
-        (CFG.DEMO_URL !== false ? `<p class="sheet-note">Looking for the sample accounts? <a href="?demo=1${location.hash}">Open the demo</a>.</p>` : ''),
+        (CFG.DEMO_URL !== false ? `<p class="sheet-note sheet-demo"><a href="${esc(demoHref())}">Try the demo with sample accounts</a></p>` : ''),
       mount(el) {
         const input = el.querySelector('#si-id');
         el.querySelector('[data-go=signup]').addEventListener('click', () => showStep(signUpView(), 1));
@@ -369,6 +372,13 @@
         });
       },
     };
+  }
+
+  /* Demo mode keeps the sample accounts: same page and county, ?demo=1, browser storage only. */
+  function demoHref() {
+    if (App.demoUrl) return App.demoUrl();
+    const q = new URLSearchParams(location.search); q.set('demo', '1'); q.set('tenant', App.state.tenant);
+    return location.pathname + '?' + q.toString() + '#/overview';
   }
 
   /* ---------------- sign-up ---------------- */
@@ -669,6 +679,7 @@
       `<div class="acct-menu" id="acct-menu" role="menu" aria-labelledby="acct-btn" hidden>` +
       `<div class="acct-head">${U.avatar(u.name, 44)}<div class="acct-head-txt"><strong>${esc(u.name)}</strong><span>${esc(roleLine(u))}</span></div></div>` +
       `<button type="button" role="menuitem" class="acct-item" data-acct="profile">${IC.user}<span>Your profile</span></button>` +
+      (can('board') ? `<button type="button" role="menuitem" class="acct-item" data-acct="purge">${IC.trash}<span>Remove sample data</span></button>` : '') +
       `<div class="acct-sep" role="separator"></div>` +
       `<button type="button" role="menuitem" class="acct-item" data-acct="signout">${IC.out}<span>Sign out</span></button></div>`;
   }
@@ -694,7 +705,7 @@
       const b = e.target.closest('[data-acct], .acct-btn'); if (!b) return;
       if (b.classList.contains('acct-btn')) { menuOpen ? closeMenu() : openMenu(); return; }
       const k = b.dataset.acct; closeMenu(true);
-      if (k === 'signin') open('signin'); else if (k === 'profile') App.go('account'); else if (k === 'signout') signOut();
+      if (k === 'signin') open('signin'); else if (k === 'profile') App.go('account'); else if (k === 'signout') signOut(); else if (k === 'purge') confirmPurge();
     });
     slot.addEventListener('keydown', (e) => {
       if (!menuOpen) { if (e.key === 'ArrowDown' && e.target.classList.contains('acct-btn')) { e.preventDefault(); openMenu(); } return; }
@@ -705,6 +716,22 @@
       else if (e.key === 'Tab') closeMenu(true);
     });
     document.addEventListener('mousedown', (e) => { if (menuOpen && !slot.contains(e.target)) closeMenu(true); });
+  }
+  /* R7: on the real database "Reset sample data" would only clear this browser, so board members get
+     "Remove sample data" instead: purge_sample deletes this county's rows marked sample, after a confirmation. */
+  function confirmPurge() {
+    if (!can('board')) return;
+    const org = tenantShort();
+    App.modal({
+      title: `Remove ${org}'s sample data?`,
+      html: `<p>This permanently deletes the sample people, timelines, lists, petitions and other records marked Sample in ${esc(org)}. ` +
+        `Records your committee added or edited stay. It can't be undone.</p>`,
+      actions: [{ label: 'Keep sample data' }, { label: 'Remove sample data', primary: true, danger: true, onClick: () => {
+        Store.purgeSample(App.state.tenant)
+          .then((n) => App.toast(n ? `Removed ${Number(n).toLocaleString('en-US')} sample records from ${org}.` : `${org} has no sample records left.`, 'ok'))
+          .catch((e) => App.toast(`Sample data wasn't removed: ${friendly(e)}`, 'error'));
+      } }],
+    });
   }
   /* Real accounts keep their home role when the county switcher changes; there are no sample twins here. */
   function tenantChanged() { renderAccountControl(); }

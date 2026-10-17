@@ -873,12 +873,32 @@
     if (!me) { ctx.toast('Only seated central committee members can vote on this ballot.', 'info'); return; }
     if (!opt) { ctx.toast('Choose an option first.', 'warn'); return; }
     const receipt = newReceipt();
-    const outcome = mutate(t, (s) => {
+    const precheck = (s) => {
       const v = ballotView(t, s, b);
       if (v.status !== 'open' || s.status === 'closed') return 'closed';
       if (v.votedIds.has(me.id)) return 'dup';
       if (!quorum(t, s).reached) return 'quorum';
       if (!(s.checkIns || {})[me.id]) return 'checkin';
+      return 'ok';
+    };
+    if (Store.backend === 'supabase' && typeof Store.rpc === 'function') {
+      /* Real backend (R5): the cast_vote RPC records the vote under a lock, once per member. A secret
+         ballot adds to the count, the voter list and the receipt list separately, never the choice with the person. */
+      const pre = precheck(load(t));
+      if (pre !== 'ok') { reportVote(ctx, pre); return; }
+      Store.rpc('cast_vote', { p_tenant: t.slug, p_meeting_id: t.meeting.id, p_ballot_id: b.id, p_option: opt, p_secret: b.type === 'SECRET',
+        p_receipt_hash: hashReceipt(receipt), p_ballot_title: b.title, p_weight: me.weight || 1 })
+        .then((res) => {
+          if (res !== 'ok') { reportVote(ctx, res); return; }
+          voteRecorded(t, ctx, b, receipt);
+          if (Store.hydrate) Store.hydrate(KEY, { tenant: t.slug }).catch(() => {});
+        })
+        .catch(() => ctx.toast('Your vote didn’t go through. Check your connection and try again.', 'error'));
+      return;
+    }
+    const outcome = mutate(t, (s) => {
+      const pre = precheck(s);
+      if (pre !== 'ok') return pre;
       if (b.type === 'SECRET') {
         const box = s.box[b.id] = s.box[b.id] || { tally: {}, voters: [], receipts: [] };
         box.tally[opt] = Number(box.tally[opt] || 0) + 1;
@@ -895,10 +915,22 @@
       }
       return 'ok';
     });
-    if (outcome === 'dup') { ctx.toast('Your ballot is already in. Each member votes once.', 'info'); return; }
-    if (outcome === 'closed') { ctx.toast('Voting on this ballot is closed.', 'info'); return; }
-    if (outcome === 'quorum') { ctx.toast('Voting opens once quorum is reached.', 'warn'); return; }
-    if (outcome === 'checkin') { ctx.toast('Check in to the meeting before you vote.', 'warn'); return; }
+    if (outcome !== 'ok') { reportVote(ctx, outcome); return; }
+    voteRecorded(t, ctx, b, receipt);
+  }
+  function reportVote(ctx, outcome) {
+    const msg = {
+      dup: ['Your ballot is already in. Each member votes once.', 'info'],
+      closed: ['Voting on this ballot is closed.', 'info'],
+      quorum: ['Voting opens once quorum is reached.', 'warn'],
+      checkin: ['Check in to the meeting before you vote.', 'warn'],
+      notstarted: ['Voting opens when the chair starts the meeting.', 'info'],
+      notmember: ['Your account isn’t linked to a seat on this committee yet. Ask the secretary to link it.', 'info'],
+      denied: ['Only seated central committee members can vote on this ballot.', 'info'],
+    }[outcome] || ['Your vote didn’t go through. Try again.', 'error'];
+    ctx.toast(msg[0], msg[1]);
+  }
+  function voteRecorded(t, ctx, b, receipt) {
     delete sel[b.id];
     freshIds.add('r-' + b.id); freshIds.add('v-' + b.id); freshIds.add('log');
     Store.add('votes', { title: `Voted on “${b.title}”`, ballotId: b.id, ballotTitle: b.title, meetingId: t.meeting.id, receipt, type: b.type.toLowerCase() });

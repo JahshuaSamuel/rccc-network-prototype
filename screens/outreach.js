@@ -447,6 +447,19 @@
         onOk: () => {
           try {
             const r = C.sendBroadcast({ id: D.id || undefined, owner, channel: D.channel, sender: { name: sender.name, title: sender.title }, listId: D.listId, subject: D.channel === 'email' ? D.subject.trim() : undefined, body: D.body.trim() }, undefined, { scheduleFor: later && !quiet ? at : null });
+            if (r.pending) {
+              /* Real backend: the send-email function sends it. Never say "sent" until it answers. */
+              ctx.toast(`Sending your ${kind} to ${plural(n, 'person', 'people')}.`, 'info');
+              M.draft = null;
+              go('');
+              r.promise.then((res) => {
+                const rc = res.counts || {};
+                const sk = countsLine(rc);
+                if (res.status === 'sending') ctx.toast(`Sending to ${plural(n, 'person', 'people')} in batches. The count updates as each batch goes out.`, 'ok', { duration: 6000 });
+                else ctx.toast(`Sent to ${plural(rc.sent || 0, 'person', 'people')}.${sk ? ' Skipped ' + sk + '.' : ''} Each send is on their timeline.`, 'ok', { duration: 6000 });
+              }, (err) => ctx.toast(err.message || 'That didn\'t send. Your broadcast is saved as a draft.', 'info', { duration: 9000 }));
+              return;
+            }
             const c = r.broadcast.counts || {};
             const skippedTxt = countsLine(c);
             const notQuiet = countsLine(Object.assign({}, c, { skippedQuietHours: 0 }));

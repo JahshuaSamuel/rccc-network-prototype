@@ -402,6 +402,15 @@
     if (d && d.type === 'external') render();
   }));
 
-  render();
+  /* Supabase backend: show a spinner until the first data load (Store.ready), then render and
+     redraw when the county finishes loading. The timer makes sure the page never stays blank. */
+  const ready = window.Store.ready;
+  if (ready && typeof ready.then === 'function') {
+    app.innerHTML = '<div style="min-height:60vh;display:grid;place-items:center" role="status" aria-label="Loading the campaign site"><div class="spinner" aria-hidden="true"></div></div>';
+    let first = false;
+    const paint = () => { if (first) return; first = true; render(); DB.on('hydrated', () => render()); };
+    Promise.resolve(ready).then(paint, paint);
+    setTimeout(paint, 9000);
+  } else render();
   void current;
 })();

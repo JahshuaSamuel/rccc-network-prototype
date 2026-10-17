@@ -546,7 +546,22 @@
     }
     if (window.App && App.auth && App.auth._mount) App.auth._mount($('#account-slot'));
     const tb = $('#start-tour');
-    if (tb) tb.addEventListener('click', startTour);
+    if (tb) {
+      tb.addEventListener('click', startTour);
+      if (realBackend()) tb.title = 'Opens a demo copy of the platform. The tour uses sample accounts.';
+    }
+    /* Demo tab on a site that has the real backend: a quiet way back to it. */
+    const cfg = window.RCCC_CONFIG || {};
+    const foot = $('.sidebar-foot');
+    if (foot && cfg.DEMO && cfg.BACKEND === 'supabase') {
+      const q = new URLSearchParams(location.search); q.set('demo', '0'); q.delete('tour');
+      const a = document.createElement('a');
+      a.className = 'demo-leave';
+      a.href = location.pathname + '?' + q.toString() + '#/overview';
+      a.textContent = 'Leave the demo';
+      a.title = 'Return to the live site and your real account.';
+      foot.appendChild(a);
+    }
     const mb = $('#menu-btn');
     if (mb) mb.addEventListener('click', () => document.body.classList.contains('drawer-open') ? closeDrawer() : openDrawer());
     const bd = $('#drawer-backdrop');
@@ -562,9 +577,34 @@
     });
   }
 
+  /* The tour signs in as sample accounts, so on the real backend it runs in demo mode (?demo=1),
+     which keeps everything in this browser and never touches the database. */
+  function realBackend() {
+    const c = window.RCCC_CONFIG || {};
+    return c.ACTIVE_BACKEND === 'supabase' && !!(window.Store && Store.backend === 'supabase');
+  }
+  function demoUrl(extra) {
+    const q = new URLSearchParams(location.search);
+    q.set('demo', '1');
+    q.set('tenant', state.tenant);
+    Object.keys(extra || {}).forEach((k) => q.set(k, extra[k]));
+    return location.pathname + '?' + q.toString() + '#/overview';
+  }
   function startTour() {
+    if (realBackend()) { location.assign(demoUrl({ tour: '1' })); return; }
     if (window.Tour && typeof window.Tour.start === 'function') window.Tour.start();
     else toast('The guided tour is still loading. Try again in a moment.', 'info');
+  }
+  /* Arriving from "Take the tour" on the real site: start it once, and say what it uses. */
+  function autoTour() {
+    let q;
+    try { q = new URLSearchParams(location.search); } catch (e) { return; }
+    if (q.get('tour') !== '1' || realBackend()) return;
+    q.delete('tour');
+    const qs = q.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    toast('The tour uses sample accounts and sample data, so nothing here changes your committee\'s real records.', 'info', { duration: 7000 });
+    setTimeout(startTour, 400);
   }
 
   function boot() {
@@ -585,7 +625,33 @@
       Store.on('reset', () => renderCurrent());
       Store.global.on('reset', () => renderCurrent());
     }
-    onRoute();
+    /* Supabase backend: wait for the first data load (Store.ready) so the first paint never shows
+       empty lists, then redraw whenever a county finishes loading. Store.ready settles within 8 s,
+       and the 9 s timer makes sure the loading card never stays up. */
+    const ready = window.Store && Store.ready;
+    if (ready && typeof ready.then === 'function') {
+      const main = $('#main');
+      if (main && data()) {
+        main.innerHTML = `<div class="page"><div class="card loading-card"><div class="card-body">` +
+          `<div class="spinner" aria-hidden="true"></div><h2>Loading committee data</h2>` +
+          `<p class="muted">This usually takes a second or two.</p></div></div></div>`;
+      }
+      let first = false, hyd = 0;
+      const again = () => { clearTimeout(hyd); hyd = setTimeout(() => { if (first) renderCurrent(); }, 80); };
+      const paint = () => {
+        if (first) return;
+        first = true;
+        onRoute();
+        Store.on('hydrated', again);
+        Store.global.on('hydrated', again);
+        autoTour();
+      };
+      Promise.resolve(ready).then(paint, paint);
+      setTimeout(paint, 9000);
+    } else {
+      onRoute();
+      autoTour();
+    }
     // If DATA arrives late (e.g. slow load), re-render once.
     if (!data()) {
       let tries = 0;
@@ -623,6 +689,7 @@
     setTenant,
     setRole,
     startTour,
+    demoUrl,
     get ctx() { return ctx(); },
     get route() { return Object.assign({}, current); },
     rerender: () => renderCurrent(),

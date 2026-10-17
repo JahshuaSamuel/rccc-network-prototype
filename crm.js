@@ -611,9 +611,54 @@
       const saved = saveBroadcast(Object.assign(d, { status: 'scheduled', scheduledFor: at.toISOString(), heldForQuietHours: true, counts: countsOf(a, 0) }), slug);
       return { broadcast: saved, scheduled: true, held: true, at, audience: a };
     }
+    if (remote()) {
+      /* Real backend: the send-email Edge Function resolves the list, sends and records the result
+         (status, counts, one interaction per recipient). Until it answers, the broadcast is a draft. */
+      const saved = saveBroadcast(Object.assign(d, { status: 'draft', counts: countsOf(a, 0) }), slug);
+      const promise = Store.invoke('send-email', { kind: 'broadcast', tenant: tenantSlug(slug), id: saved.id })
+        .then((r) => {
+          if (r && r.status === 'draft') throw new Error('No messages could be handed to the email service. Your broadcast is saved as a draft.');
+          return r || {};
+        }, (e) => { throw sendFailure(e, d.channel); });
+      return { broadcast: saved, scheduled: false, pending: true, promise, audience: a };
+    }
     const saved = saveBroadcast(Object.assign(d, { status: 'sent', sentAt: nowIso(), counts: countsOf(a, a.recipients.length) }), slug);
     logSend(saved, a.recipients, slug);
     return { broadcast: saved, scheduled: false, audience: a };
+  }
+  /* Supabase backend (docs/SUPABASE.md R2): sending goes through the send-email Edge Function. */
+  function remote() { return Store.backend === 'supabase' && typeof Store.invoke === 'function'; }
+  function sendFailure(e, channel) {
+    if (e && e.reachable && e.status !== 404) {
+      const m = String(e.message || '').trim().replace(/([^.])$/, '$1.');
+      return new Error(e.status === 409 ? m : `${m} Your broadcast is saved as a draft.`);
+    }
+    return new Error(channel === 'sms'
+      ? 'Texting isn\'t connected yet. Your message is saved as a draft.'
+      : 'Email sending isn\'t connected yet. Your broadcast is saved as a draft.');
+  }
+  const schedBusy = new Set();
+  let schedPauseUntil = 0, schedNoticed = false;
+  function runScheduledRemote(slug) {
+    if (Date.now() < schedPauseUntil) return [];
+    const s = tenantSlug(slug);
+    list('broadcasts', s).filter((b) => b.status === 'scheduled' && b.channel === 'email' && b.scheduledFor && Date.parse(b.scheduledFor) <= Date.now() && perms.send(ownerOf(b)))
+      .forEach((b) => {
+        const key = s + ':' + b.id;
+        if (schedBusy.has(key)) return;
+        schedBusy.add(key);
+        Store.invoke('send-email', { kind: 'broadcast', tenant: s, id: b.id })
+          .catch((e) => {
+            if (e && e.reachable) return;
+            schedPauseUntil = Date.now() + 10 * 60000;   // not connected: try again in 10 minutes
+            if (!schedNoticed) {
+              schedNoticed = true;
+              App.toast('A scheduled email is due, but email sending isn\'t connected yet. It stays scheduled and goes out once sending is on.', 'info', { duration: 8000 });
+            }
+          })
+          .then(() => schedBusy.delete(key));
+      });
+    return [];
   }
   function countsOf(a, sent) {
     return { sent, skippedOptOut: a.skipped.optOut.length + a.skipped.doNotContact.length, skippedQuietHours: a.skipped.quietHours.length, skippedNoContact: a.skipped.noContact.length };
@@ -633,6 +678,7 @@
   function cancelBroadcast(id, slug) { return db(slug).update('broadcasts', id, { status: 'draft', scheduledFor: null, heldForQuietHours: false }); }
   /* Sends scheduled broadcasts whose time has come (checked on load and every minute while a CRM screen is open). */
   function runScheduled(slug) {
+    if (remote()) return runScheduledRemote(slug);
     const due = list('broadcasts', slug).filter((b) => b.status === 'scheduled' && b.scheduledFor && Date.parse(b.scheduledFor) <= Date.now());
     const out = [];
     due.forEach((b) => {
@@ -1305,9 +1351,16 @@
   }
 
   /* ---------------- statewide aggregates ---------------- */
+  let statsWatch = false;
   function stats(slug) {
     const s = tenantSlug(slug);
     if (!tenantObj(s)) return null;
+    if (remote() && typeof Store.crmStats === 'function') {
+      // Counts only, from the crm_stats RPC (cached; refreshed in the background, then the screen redraws).
+      if (!statsWatch) { statsWatch = true; Store.on('crmStats', () => { if (App.route && App.route.id === 'master') App.rerender(); }); }
+      const v = Store.crmStats(s);
+      return v ? Object.assign({}, v) : null;
+    }
     ensure(s);
     const all = list('people', s).filter((p) => !p.mergedInto);
     const ppl = all.filter((p) => ownerOf(p) === 'committee');

@@ -1,6 +1,6 @@
 # RCCC Network on Supabase and Resend
 
-Status: **prepared, not wired in.** Nothing in this folder changes how the site runs today. The files are written to be reviewed now and switched on once the Supabase project and the Resend account exist.
+Status (2026-10-16): **wired in and live on Supabase project `udnrlisexjymqousvkkn`.** The three pages load `config.js` with `BACKEND: 'supabase'`. Public actions, sign-in, the CRM and meetings run against the real database. Email is the one piece still waiting: see **section 10** for what is live, what was verified and the exact steps left (Resend SMTP, the function secrets, the webhook and pg_cron). To go back to browser storage, see 10.4.
 
 | File | What it is |
 |---|---|
@@ -177,13 +177,13 @@ window.RCCC_CONFIG = {
 
 ### 4.4 Feature flags and the small changes other owners make
 - `BACKEND = 'local'` is today's behavior, byte for byte. Flip to `'supabase'` per environment.
-- **R1 (core.js, foundation):** before the first `onRoute()`, wait for `Store.ready` when it exists: `Promise.resolve(Store.ready).then(onRoute)`. Also `Store.on('hydrated', renderCurrent)`. Without it, the first paint can show empty lists for up to a second until the `external` events arrive. The same applies to `site.js` and `campaign.js` first render.
-- **R2 (crm.js, CRM agent):** when `Store.backend === 'supabase'`, `sendBroadcast` and `runScheduled` call `Store.invoke('send-email', {kind:'broadcast', tenant, broadcastId})` instead of logging sends locally. `stats(slug)` returns `Store.crmStats(slug)` (cached from the `crm_stats` RPC) for Master Network. `ingest()` is already neutralized by the adapter, so no change is needed there.
-- **R3 (screens/candidate.js, candidate agent):** split the county key `socialPlan` into one key per candidate (`socialPlan:<candidateId>`). Until then a candidate can read every candidate's plan in that county (writes are guarded).
-- **R4 (site.js, site-act.js, public-site agent):** use `Store.count('rsvps', 'eventId')` / `Store.count('signatures', 'petitionId')` when present instead of `list().length`, so the aggregate placeholder rows can be retired.
-- **R5 (governance, committee agent):** move vote casting into an RPC so a member cannot rewrite `meetingState.ballots` directly (risk 7.6).
-- **R6 (tour.js, network agent):** the guided tour switches between sample accounts with `App.setRole`. With the real backend, `signInSample` shows a note and returns false, so the tour should start only in demo mode (or link to `?demo=1`).
-- **R7 (screens/account.js, foundation):** "Reset sample data" only clears this browser's cache under Supabase. Hide it when `Store.backend === 'supabase'`, and for board members offer "Remove sample data" (`Store.purgeSample()`) behind a confirmation instead.
+- **R1 (core.js, foundation):** *Done 2026-10-16 in core.js, site.js and campaign.js.* Before the first `onRoute()`, wait for `Store.ready` when it exists: `Promise.resolve(Store.ready).then(onRoute)`. Also `Store.on('hydrated', renderCurrent)`. Without it, the first paint can show empty lists for up to a second until the `external` events arrive. The same applies to `site.js` and `campaign.js` first render.
+- **R2 (crm.js, CRM agent):** *Done 2026-10-16 (crm.js and screens/outreach.js).* When `Store.backend === 'supabase'`, `sendBroadcast` and `runScheduled` call `Store.invoke('send-email', {kind:'broadcast', tenant, broadcastId})` instead of logging sends locally. `stats(slug)` returns `Store.crmStats(slug)` (cached from the `crm_stats` RPC) for Master Network. `ingest()` is already neutralized by the adapter, so no change is needed there.
+- **R3 (screens/candidate.js, candidate agent):** *Not done yet; needs a schema change too (see 10.5).* Split the county key `socialPlan` into one key per candidate (`socialPlan:<candidateId>`). Until then a candidate can read every candidate's plan in that county (writes are guarded).
+- **R4 (site.js, site-act.js, public-site agent):** *Done 2026-10-16. The placeholder rows still exist in the adapter and can be retired later.* Use `Store.count('rsvps', 'eventId')` / `Store.count('signatures', 'petitionId')` when present instead of `list().length`, so the aggregate placeholder rows can be retired.
+- **R5 (governance, committee agent):** *Done 2026-10-16: migration `20261016200000_meeting_votes.sql` (cast_vote RPC and a meetingState guard), schema.sql section 9b, screens/governance.js.* Move vote casting into an RPC so a member cannot rewrite `meetingState.ballots` directly (risk 7.6).
+- **R6 (tour.js, network agent):** *Done 2026-10-16 in core.js: "Take the tour" opens `?demo=1&tour=1` in the same tab, the tour starts and a toast says it uses sample accounts. Demo tabs show "Leave the demo" in the sidebar.* The guided tour switches between sample accounts with `App.setRole`. With the real backend, `signInSample` shows a note and returns false, so the tour should start only in demo mode (or link to `?demo=1`).
+- **R7 (screens/account.js, foundation):** *Done 2026-10-16 in auth-supabase.js (the Supabase account menu never had the reset item; board and master get "Remove sample data" with a confirmation).* "Reset sample data" only clears this browser's cache under Supabase. Hide it when `Store.backend === 'supabase'`, and for board members offer "Remove sample data" (`Store.purgeSample()`) behind a confirmation instead.
 
 ---
 
@@ -323,3 +323,61 @@ Before review, `schema.sql` and `seed.sql` were loaded into PGlite (Postgres com
 7. **Sample data in production.** Should real counties start with the sample CRM people (marked Sample) or empty? `purge_sample` removes them.
 8. **Sending domain.** Which domain will be verified in Resend, and will each county get its own From address?
 9. **Captcha.** Turnstile on public forms now, or after the first abuse?
+
+---
+
+## 10. Go-live status (2026-10-16)
+
+### 10.1 Live now
+- **Database:** migrations `20261016180000_schema.sql`, `20261016180100_sample_seed.sql` and `20261016200000_meeting_votes.sql` are applied. `supabase/schema.sql` matches all three.
+- **Pages:** `app.html`, `index.html` and `campaign.html` load `config.js`, `@supabase/supabase-js@2.45.4` from jsdelivr and `store-supabase.js`; the app also loads `auth-supabase.js` right after `auth.js`.
+- **First paint (R1):** each page shows its loading state until `Store.ready`, then renders, then redraws on `hydrated`. A 9-second backstop timer means a page never stays on the spinner.
+- **Broadcasts (R2):** on Supabase, Send saves the broadcast as a draft and calls `send-email`. Until email is connected the screen says "Email sending isn't connected yet. Your broadcast is saved as a draft." and never says "Sent". Due scheduled broadcasts stay scheduled, and one quiet notice appears per session. Master Network totals come from the `crm_stats` RPC.
+- **Votes (R5):** `cast_vote()` records one vote per member under a row lock. A secret ballot adds to the tally, the voter list and the hashed-receipt list separately; the receipt stays with the voter (`votes`). Members can no longer change `ballots`, `box`, the meeting status, minutes or anyone else's check-in, and the meeting record is append-only for them (trigger `meeting_state_guard`). Board members keep full control. Quorum is still checked in the browser, because the seat list lives in `data.js`, and the ballot type (secret or roll call) comes from the browser.
+- **Demo mode:** `?demo=1` is the old browser-only build with the sample accounts and the tour. It sends no requests to Supabase. The real sign-in sheet offers no sample accounts, only the quiet link "Try the demo with sample accounts".
+- **Sign-in links:** `detectSessionInUrl` is on, so if Supabase sends a sign-in link instead of a code (the default template), opening the link still signs the person in.
+
+### 10.2 Verified against the live project
+- Signed-out RSVP, volunteer sign-up, membership application, petition signature and unsubscribe each returned HTTP 201 and showed their success state. A reload still showed "You're going" from the local copy. The event head count went from 38 to 39 and the petition count from 221 to 222.
+- Server ingestion created one committee person and one timeline entry for each of the RSVP, volunteer, membership and signature submissions (checked with `supabase db query`). The opt-out matched no existing person, so it created none, as designed.
+- Anonymous REST reads of `people`, `rsvps`, `interactions`, `volunteers`, `memberships`, `signatures` and `optOuts` returned `[]`, an unfiltered read returned only the 6 live petitions, and `profiles` returned permission denied.
+- The RSVP cancel, volunteer and unsubscribe-undo paths all withdrew through `withdraw_submission` (true each time).
+- R5, in one rolled-back transaction as a test member and a test board member: voting before check-in returned `checkin`; the first vote returned `ok`; a second vote returned `dup`, even when sent as a roll call; direct edits to the box, the roll, another member's check-in or the log failed, and so did deleting the meeting; anonymous callers got permission denied.
+- App signed out at 390 and 1440: the overview, Public Media Hub and Newsroom render, the other 10 screens show their sign-in gates, and there is no horizontal scroll and no console errors. The public site and campaign page also showed no console errors on both backends.
+- Demo mode at 390 and 1440: the tour ran all 31 steps, the sign-in sheet listed the sample accounts, every screen rendered as each of the 5 sample roles, and there were no console errors and no Supabase requests.
+- Every test row was removed afterwards, including the 4 CRM people and their timelines, the membership and signature, the `crmIngest` entries and one test auth user. The live data is back to its seeded counts.
+
+### 10.3 What is left for you
+1. **Resend:** verify a sending domain (for example `mail.<county-domain>`) with SPF, DKIM and a DMARC record at `p=none`. Then create an API key with sending access only.
+2. **Supabase Auth SMTP:** either use Dashboard → Authentication → Emails → SMTP Settings (host `smtp.resend.com`, port `465`, user `resend`, password the Resend key, sender `no-reply@<your verified domain>`, name `RCCC Network`), or uncomment the `[auth.email.smtp]` block in `supabase/config.toml`, set `admin_email` and run
+   `RESEND_SMTP_PASS=re_xxx supabase config push --project-ref udnrlisexjymqousvkkn --yes`.
+   Raise `[auth.rate_limit] email_sent` from 2 to about 30 per hour in the same push.
+3. **Email templates and confirmations:** in `supabase/config.toml`, uncomment `[auth.email.template.magic_link]`, `[auth.email.template.confirmation]` and `[auth.email.template.email_change]`. `enable_confirmations` is already set to `true` there but has not been pushed yet. Then run `supabase config push --project-ref udnrlisexjymqousvkkn --yes`. Sign-up and sign-in emails will then carry the 6-digit code instead of a link.
+   **Security note:** the live project still has confirmations off. In that mode Supabase marks an address confirmed without any code (a test sign-up to an address that could not receive mail came back confirmed). Anyone could then create an account under someone else's email, for example the address on a candidate invite, and `claim_invite` matches on email. Push `enable_confirmations = true` before you send any invites.
+4. **Edge Function secrets:** `send-email` reads `RESEND_API_KEY` and `EMAIL_FROM` at startup and is missing both, so today every call fails with 500 `WORKER_ERROR`. That includes the one-click unsubscribe links. Run:
+   `supabase secrets set RESEND_API_KEY=re_xxx EMAIL_FROM="SVGOP <no-reply@mail.your-domain.org>" --project-ref udnrlisexjymqousvkkn`
+   No redeploy is needed. The function's CORS allows only `SITE_URL` (the GitHub Pages origin), so sends work from the published site, not from `localhost`.
+5. **RSVP confirmations (Database Webhook):** Dashboard → Database → Webhooks → Create: table `public.docs`, event `Insert`, type HTTP Request, `POST https://udnrlisexjymqousvkkn.supabase.co/functions/v1/send-email`, headers `content-type: application/json` and `x-webhook-secret: <the WEBHOOK_SECRET you set>`. The function ignores every insert except new `rsvps` rows.
+6. **Scheduled broadcasts (pg_cron):** Dashboard → Database → Extensions: enable `pg_cron` and `pg_net`. Then in the SQL editor:
+   ```sql
+   select vault.create_secret('<WEBHOOK_SECRET>', 'rccc_webhook_secret');
+   select cron.schedule('rccc-scheduled-broadcasts', '* * * * *', $$
+     select net.http_post(
+       url := 'https://udnrlisexjymqousvkkn.supabase.co/functions/v1/send-email',
+       headers := jsonb_build_object('content-type', 'application/json',
+         'x-webhook-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'rccc_webhook_secret')),
+       body := '{"kind":"scheduled"}'::jsonb)
+   $$);
+   ```
+   Until then, an open board session sends due email broadcasts through the function once a minute.
+7. **First real accounts:** sign up on the published site, then in the SQL editor run `select set_role('<your user id>', 'board', 'svgop');`. To let a member vote in Meetings & Voting, link their seat with `update profiles set member_id = '<member id from data.js>' where id = '<user id>';`.
+8. **Sample data:** when the committee is ready, a board member uses account menu → "Remove sample data". This deletes every row marked sample in that county.
+
+### 10.4 Switching back to browser storage
+In `config.js`, change `BACKEND: 'supabase'` to `BACKEND: 'local'`. Every page goes back to the localStorage build with the sample accounts on its next load. No other file changes, and the database is untouched.
+
+### 10.5 Known gaps
+- **R3:** `socialPlan` is still one key per county, so a candidate can read every candidate's plan in their county. Writes are guarded. Splitting the key per candidate also needs `doc_access()` to match the `socialPlan:<candidateId>` suffix against the caller's candidate id, because today `map_guard` gives every candidate access to every `socialPlan*` key.
+- In demo mode, the public site's petition pages are empty in a fresh browser until the app has been opened once, because `crm.js` seeds them. This was already the case before this change.
+- A sign-in attempt for an unknown email logs the 422 response as a resource error in the browser console. Chrome does this for any failed request. The sheet itself shows a clear message.
+- Without custom SMTP, Supabase sends auth emails only to project team members, and they arrive as links. A sign-up to any other address can still create an account (confirmed, while confirmations are off) even though no email goes out. Deleting those accounts in Authentication → Users is safe.

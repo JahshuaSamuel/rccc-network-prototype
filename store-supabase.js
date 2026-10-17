@@ -20,7 +20,8 @@
   }
 
   const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'rccc:sb:auth' },
+    // detectSessionInUrl: if Supabase sends a sign-in link instead of a code (default email templates), opening it still signs the person in.
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'rccc:sb:auth' },
   });
   window.RCCC_SB = sb;   // shared with auth-supabase.js so REST, RPC and Realtime use one session
 
@@ -710,12 +711,26 @@
   Store.onAuthState = (fn) => { authSubs.add(fn); return () => authSubs.delete(fn); };
   Store.refreshProfile = async () => { await loadProfile(); notifyAuth(); return clone(profile); };
   Store.rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args || {}); if (error) throw error; return data; };
+  /* Resolves once every queued write has reached the server (or after ms). Returns true when the queue is empty. */
+  Store.settle = async (ms) => {
+    const end = Date.now() + (ms || 10000);
+    while (queue.length && Date.now() < end) { flush(); await new Promise((r) => setTimeout(r, 150)); }
+    return !queue.length;
+  };
+  /* Calls an Edge Function after this browser's pending writes are saved (a broadcast must exist before it is sent).
+     Errors carry .status (HTTP status, 0 when the function could not be reached) and .reachable. */
   Store.invoke = async (fn, body) => {
+    await Store.settle(10000);
     const { data, error } = await sb.functions.invoke(fn, { body: body || {} });
     if (error) {
-      let msg = error.message;
-      try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (e) { /* not json */ }
-      throw new Error(msg);
+      let msg = error.message, status = 0;
+      const res = error.context;
+      if (res && typeof res.status === 'number') status = res.status;
+      try { const j = await res.json(); if (j && (j.error || j.msg || j.message)) msg = j.error || j.msg || j.message; } catch (e) { /* not json */ }
+      const err = new Error(msg);
+      err.status = status;
+      err.reachable = error.name === 'FunctionsHttpError' && status > 0 && status < 500;
+      throw err;
     }
     return data;
   };

@@ -224,7 +224,10 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# true: a new account must prove it owns its email (the 6-digit code) before it gets a session. With false,
+# Supabase confirms any address on sign-up without a code (docs/SUPABASE.md section 10, security note).
+# Not pushed yet: it takes effect on the next `supabase config push`, together with the SMTP block below.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -256,12 +259,28 @@ otp_expiry = 600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 # Enable after custom SMTP (Resend) is configured; Supabase rejects templates on the default sender.
+# Steps in docs/SUPABASE.md section 10: set RESEND_SMTP_PASS in your shell (a Resend API key with sending access),
+# change admin_email to an address on your verified Resend domain, uncomment the blocks below, then:
+#   supabase config push --project-ref udnrlisexjymqousvkkn --yes
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_SMTP_PASS)"
+# admin_email = "no-reply@mail.your-domain.org"
+# sender_name = "RCCC Network"
+
 # [auth.email.template.magic_link]
 # subject = "Your RCCC Network sign-in code"
 # content_path = "./supabase/templates/otp.html"
 
 # [auth.email.template.confirmation]
 # subject = "Your RCCC Network sign-in code"
+# content_path = "./supabase/templates/otp.html"
+
+# [auth.email.template.email_change]
+# subject = "Confirm your new email for RCCC Network"
 # content_path = "./supabase/templates/otp.html"
 
 [auth.sms]
